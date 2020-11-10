@@ -12,7 +12,9 @@ layout = [[sg.Text("Name:")],
 # Create the window
 window = sg.Window('Login', layout)
 
-# Display and interact with the Window using an Event Loop
+# Display and interact with the Window using an Event Loop. 
+# When a button is clicked, the click event returns the text 
+# of the button clicked by the user.
 while True:
     event, values = window.read()
     # See if user wants to quit or window was closed
