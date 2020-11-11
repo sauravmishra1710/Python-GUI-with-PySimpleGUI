@@ -23,6 +23,9 @@ while True:
     
     if timer_paused == True:
         window['text'].update('Timer Paused')
-
+    
+    if event == 'Resume':
+        timer_paused = False
+        window['text'].update(current_time)
 # Finish up by removing from the screen
 window.close()
