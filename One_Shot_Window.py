@@ -25,7 +25,7 @@ while True:
     # No validation is added at this point as this is purely to 
     # introduce the GUI concepts.
     if event == 'OK':
-        sg.Popup('Login Result', 'SUCCESS!', modal = True)
+        sg.Popup( 'SUCCESS! (This is to ensure that the message is long enough for the popup title to be visible)', title='Login Result', modal=True) 
     
 # Finish up by removing from the screen
 window.close()
