@@ -6,7 +6,7 @@ layout = [[sg.Text('')],
 [sg.Text(size=(16,2),key='text')],
 [sg.Button('Pause',key='Pause'),sg.Button('Resume',key='Resume'), sg.Exit(key='Exit')]]
 
-window = sg.Window('Timer', layout)
+window = sg.Window('Timer', layout, size=(300, 120), modal=True)
 
 while True:
     event, values = window.read(timeout=10)
