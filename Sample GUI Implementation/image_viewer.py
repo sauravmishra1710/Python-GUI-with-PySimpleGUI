@@ -22,6 +22,8 @@ import os.path
 import PySimpleGUI as sg
 import cv2
 
+sg.theme('dark grey 9')
+
 FILE_SELECT_COLUMN_LAYOUT = [
     [sg.Text("Image Folder:")],
     [sg.In(size=(52, 1), enable_events=True, key="-FOLDER-"),
