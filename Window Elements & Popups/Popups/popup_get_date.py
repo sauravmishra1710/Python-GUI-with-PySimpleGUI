@@ -4,7 +4,7 @@ import datetime
 import PySimpleGUI as sg
 
 LAYOUT = [[sg.Text("Select Date:")],
-          [sg.InputText(size=(40, 1), key='-TEXT-'),
+          [sg.InputText(size=(40, 1), key='-TEXT-', disabled=True),
            sg.Button('Select Date', key='-DATE-', tooltip='Select Date')],
           [sg.Button('Ok'), sg.Button('Cancel')]]
 
