@@ -12,16 +12,21 @@ if extension in ["jpg", "jpeg"]:  # JPG file
     new_filename = values["image_file"].replace(extension, "png")
     im = Image.open(values["image_file"])
     im.save(new_filename)
+
+    OR
+
+cv2.imencode('.png', IMAGE)[1].tobytes()
 '''
 
 import os.path
 import PySimpleGUI as sg
+import cv2
 
 FILE_SELECT_COLUMN_LAYOUT = [
     [sg.Text("Image Folder:")],
     [sg.In(size=(52, 1), enable_events=True, key="-FOLDER-"),
      sg.FolderBrowse(tooltip="Select a folder"),],
-    [sg.Text("Images Retrieved: **(PNG/GIF)")],
+    [sg.Text("Images Retrieved:")],
     [sg.Listbox(values=[], enable_events=True, size=(59, 20), key="-FILE LIST-")],]
 
 IMAGE_VIEWER_COLUMN_LAYOUT = [
@@ -66,8 +71,7 @@ while True:
             FILE_LIST = []
 
         FNAMES = [imgfile for imgfile in FILE_LIST
-                  if os.path.isfile(os.path.join(FOLDER, imgfile))
-                  and imgfile.lower().endswith((".png", ".gif"))]
+                  if os.path.isfile(os.path.join(FOLDER, imgfile))]
 
         WINDOW["-FILE LIST-"].update(FNAMES)
 
@@ -77,7 +81,14 @@ while True:
                 VALUES["-FOLDER-"], VALUES["-FILE LIST-"][0]
             )
             WINDOW["-IMAGE_FILE-"].update(FILENAME)
-            WINDOW["-IMAGE-"].update(filename=FILENAME)
+            IMAGE = cv2.imread(FILENAME) # pylint: disable=no-member
+
+            # Resize the image if the dimension is to large.
+            if IMAGE.shape[0] > 999 and IMAGE.shape[1] > 768:
+                IMAGE = cv2.resize(IMAGE, (1024, 768), interpolation=cv2.INTER_NEAREST) # pylint: disable=no-member
+
+            WINDOW["-IMAGE-"].update(data=cv2.imencode('.png', IMAGE)[1].tobytes()) # pylint: disable=no-member
+            # WINDOW["-IMAGE-"].update(filename=FILENAME)
             WINDOW["-STATIC_TEXT-"].update("Image Selected:", font=("Helvetica", 12))
 
         except: # pylint: disable=bare-except
