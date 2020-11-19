@@ -13,14 +13,21 @@ WINDOW_WIDTH: int = 90
 WINDOW_HEIGHT: int = 25
 FILE_NAME: str = None
 font_dict = {}
-DEFAULT_FONT_NAME: str = '@MS Gothic'
+DEFAULT_FONT_NAME: str = 'Times New Roman'
 
 def ShowFontDialog():
     '''Get a font dialog to display and return all the
     font settings chosen to be applied to the editor.'''
 
+    # the font styles supported by PySimpleGUI are mentioned
+    # @ https://github.com/PySimpleGUI/PySimpleGUI/issues/3633#issuecomment-729675676
+    # bold, italic, underline, and overstrike. These styles can be specified as a
+    # string like - 'overstrike underline italic'
+
     wx_app = [] # pylint: disable=unused-variable
     wx_app = wx.App(None)
+
+    font_style_modifier: str = ''
 
     dialog = wx.FontDialog(None, wx.FontData())
     if dialog.ShowModal() == wx.ID_OK:
@@ -30,33 +37,28 @@ def ShowFontDialog():
         font_info = font.GetNativeFontInfoUserDesc()
         selected_styles = shlex.split(font_info)
 
-        font_underlined = font.GetUnderlined()
-        font_dict['font_underlined'] = font_underlined
+        if 'bold' in selected_styles:
+            font_style_modifier += 'bold '
 
-        font_strikethrogh = font.GetStrikethrough()
-        font_dict['font_strikethrogh'] = font_strikethrogh
+        if 'italic' in selected_styles:
+            font_style_modifier += 'italic '
+
+        if font.GetUnderlined():
+            font_style_modifier += 'underline '
+
+        if font.GetStrikethrough():
+            font_style_modifier += 'overstrike '
 
         font_color = data.GetColour()
         font_color = rgb2hex(font_color[0], font_color[1], font_color[2])
-        font_dict['font_color'] = font_color
 
         font_facename = font.GetFaceName()
-        font_dict['font_facename'] = font_facename
 
         font_size = font.GetPointSize()
-        font_dict['font_size'] = font_size
 
-        if 'bold' in selected_styles:
-            font_dict['font_bold'] = True
-        else:
-            font_dict['font_bold'] = False
+        WINDOW['-BODY-'].update(font=(font_facename, font_size, font_style_modifier),
+                                text_color=font_color)
 
-        if 'italic' in selected_styles:
-            font_dict['font_italic'] = True
-        else:
-            font_dict['font_italic'] = False
-
-        print('')
 
 def rgb2hex(r, g, b):
     '''Convert RGB to hex values.'''
@@ -73,9 +75,9 @@ menu_layout: list = [['&File', [file_new, file_open, file_save, 'Save As', '____
                      ['&Help', ['About']]]
 
 layout: list = [[sg.Menu(menu_layout)],
-                [sg.Text('New File:', font=(DEFAULT_FONT_NAME, 10),
+                [sg.Text('New File:', font=('Times New Roman', 10),
                          size=(WINDOW_WIDTH, 1), key='-FILE_INFO-')],
-                [sg.Multiline(font=(DEFAULT_FONT_NAME, 12, 'overstrike underline italic'),
+                [sg.Multiline(font=(DEFAULT_FONT_NAME, 12),
                               size=(WINDOW_WIDTH, WINDOW_HEIGHT), key='-BODY-')]]
 
 WINDOW = sg.Window('Notepad', layout=layout, margins=(0, 0),
@@ -205,10 +207,12 @@ def about():
     sg.PopupQuick('A simple Notepad like application created using\
         PySimpleGUI framework.', auto_close=False)
 
+# read the events and take appropriate actions.
 while True:
     EVENT, VALUES = WINDOW.read()
 
-    if EVENT in (None, 'Exit'):
+    if EVENT in (sg.WINDOW_CLOSED, 'Exit'):
+        # exit out of the application is close or exit clicked.
         break
     if EVENT in (file_new, 'n:78'):
         new_file()
