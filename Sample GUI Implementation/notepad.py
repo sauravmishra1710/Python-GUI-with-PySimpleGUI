@@ -12,7 +12,6 @@ sg.theme('dark grey 9')
 WINDOW_WIDTH: int = 90
 WINDOW_HEIGHT: int = 25
 FILE_NAME: str = None
-font_dict = {}
 DEFAULT_FONT_NAME: str = 'Times New Roman'
 
 def ShowFontDialog():
@@ -34,29 +33,37 @@ def ShowFontDialog():
         data = dialog.GetFontData()
         font = data.GetChosenFont()
 
+        # extract the seletec settings in the dialog
+        # to construct the font style modifiers.
         font_info = font.GetNativeFontInfoUserDesc()
         selected_styles = shlex.split(font_info)
 
+        # font bold.
         if 'bold' in selected_styles:
             font_style_modifier += 'bold '
 
+        # font italic.
         if 'italic' in selected_styles:
             font_style_modifier += 'italic '
 
+        # font underline.
         if font.GetUnderlined():
             font_style_modifier += 'underline '
 
+        # font strikethrough/overstrike.
         if font.GetStrikethrough():
             font_style_modifier += 'overstrike '
 
+        # get the selected font/text color.
         font_color = data.GetColour()
         font_color = rgb2hex(font_color[0], font_color[1], font_color[2])
 
+        # get the selected font name and size.
         font_facename = font.GetFaceName()
-
         font_size = font.GetPointSize()
 
-        WINDOW['-BODY-'].update(font=(font_facename, font_size, font_style_modifier),
+        # update the font as per the above settings.
+        WINDOW['-BODY-'].update(font=(font_facename, font_size, font_style_modifier.rstrip()),
                                 text_color=font_color)
 
 
@@ -64,7 +71,7 @@ def rgb2hex(r, g, b):
     '''Convert RGB to hex values.'''
     return "#{:02x}{:02x}{:02x}".format(r, g, b)
 
-# string variables to shorten loop and menu code
+# file menu constants.
 file_new: str = 'New             (CTRL+N)'
 file_open: str = 'Open           (CTRL+O)'
 file_save: str = 'Save           (CTRL+S)'
@@ -214,6 +221,7 @@ while True:
     if EVENT in (sg.WINDOW_CLOSED, 'Exit'):
         # exit out of the application is close or exit clicked.
         break
+
     if EVENT in (file_new, 'n:78'):
         new_file()
     if EVENT in (file_open, 'o:79'):
