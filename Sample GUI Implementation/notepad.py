@@ -3,8 +3,15 @@
 # pylint: disable=invalid-name
 
 import shlex
+from tkinter import Tk
+import clipboard
 import wx
 import PySimpleGUI as sg
+
+# initialize the tkinter framework and call the withdraw() API
+# to ensure the blank Tkinter root dialog does not popup at runtime.
+tk = Tk()
+tk.withdraw()
 
 # change the default theme.
 sg.theme('dark grey 9')
@@ -72,11 +79,18 @@ def rgb2hex(r, g, b):
     return "#{:02x}{:02x}{:02x}".format(r, g, b)
 
 # file menu constants.
-file_new: str = 'New             (CTRL+N)'
+file_new: str = 'New            (CTRL+N)'
 file_open: str = 'Open           (CTRL+O)'
-file_save: str = 'Save           (CTRL+S)'
+file_save: str = 'Save             (CTRL+S)'
 
-menu_layout: list = [['&File', [file_new, file_open, file_save, 'Save As', '__________________', 'Exit']],
+# edit menu constants.
+edit_cut: str = 'Cut                   (CTRL+X)'
+edit_copy: str = 'Copy                (CTRL+C)'
+edit_paste: str = 'Paste                (CTRL+V)'
+edit_delete: str = 'Delete              (Del)'
+
+menu_layout: list = [['&File', [file_new, file_open, file_save, 'Save As', '______________________', 'Exit']],
+                     ['&Edit', [edit_cut, edit_copy, edit_paste, edit_delete]],
                      ['&Statistics', ['Word Count', 'Line Count', 'Character With Spaces', 'Character Without Spaces', ]],
                      ['F&ormat', ['Font', ]],
                      ['&Help', ['About']]]
@@ -127,7 +141,7 @@ def save_as() -> str:
     try:
         file_name: str = sg.popup_get_file('Save As', save_as=True, no_window=True)
     except: # pylint: disable=bare-except
-        return
+        return ''
     if file_name not in (None, '') and not isinstance(FILE_NAME, tuple):
         with open(file_name, 'w') as f:
             f.write(VALUES.get('-BODY-'))
@@ -221,7 +235,8 @@ while True:
     if EVENT in (sg.WINDOW_CLOSED, 'Exit'):
         # exit out of the application is close or exit clicked.
         break
-
+    
+    # file menu events.
     if EVENT in (file_new, 'n:78'):
         new_file()
     if EVENT in (file_open, 'o:79'):
@@ -230,6 +245,27 @@ while True:
         save_file(FILE_NAME)
     if EVENT in ('Save As',):
         FILE_NAME = save_as()
+
+    # edit menu events.
+    if EVENT == edit_cut:
+        selected_text = WINDOW['-BODY-'].Widget.selection_get()
+        tk.clipboard_clear()
+        tk.clipboard_append(selected_text)
+        tk.update()
+
+    if EVENT == edit_copy:
+        selected_text = WINDOW['-BODY-'].Widget.selection_get()
+        tk.clipboard_clear()
+        tk.clipboard_append(selected_text)
+        tk.update() # now it stays on the clipboard after the window is closed
+
+    if EVENT == edit_paste:
+        clip_text = tk.clipboard_get()
+        WINDOW['-BODY-'].Widget.insert("insert", clip_text)
+
+    if EVENT == edit_delete:
+        WINDOW['-BODY-'].Widget.delete("sel.first", "sel.last")
+
     if EVENT in ('Word Count',):
         WORDS = get_word_count()
         if WORDS != 0:
