@@ -4,7 +4,6 @@
 
 import shlex
 from tkinter import Tk
-import clipboard
 import wx
 import PySimpleGUI as sg
 
@@ -13,13 +12,19 @@ import PySimpleGUI as sg
 tk = Tk()
 tk.withdraw()
 
+wx_app = [] # pylint: disable=unused-variable
+wx_app = wx.App(None)
+
+
 # change the default theme.
-sg.theme('dark grey 9')
+# sg.theme('dark grey 9')
 
 WINDOW_WIDTH: int = 90
 WINDOW_HEIGHT: int = 25
 FILE_NAME: str = None
 DEFAULT_FONT_NAME: str = 'Times New Roman'
+APP_NAME: str = 'NotepadPy+'
+SELECTED_THEME: str = ''
 
 def ShowFontDialog():
     '''Get a font dialog to display and return all the
@@ -29,9 +34,6 @@ def ShowFontDialog():
     # @ https://github.com/PySimpleGUI/PySimpleGUI/issues/3633#issuecomment-729675676
     # bold, italic, underline, and overstrike. These styles can be specified as a
     # string like - 'overstrike underline italic'
-
-    wx_app = [] # pylint: disable=unused-variable
-    wx_app = wx.App(None)
 
     font_style_modifier: str = ''
 
@@ -73,39 +75,96 @@ def ShowFontDialog():
         WINDOW['-BODY-'].update(font=(font_facename, font_size, font_style_modifier.rstrip()),
                                 text_color=font_color)
 
+def ShowPrintDialog():
+    '''Displays the System print dialog.'''
+    data = wx.PrintDialogData()
+    data.EnableSelection(True)
+    data.EnablePrintToFile(True)
+    data.EnablePageNumbers(True)
+    data.SetMinPage(1)
+    data.SetMaxPage(10)
+
+    dialog = wx.PrintDialog(None, data)
+
+    text_to_print = VALUES['-BODY-']
+    if dialog.ShowModal() == wx.ID_OK:
+        data = dialog.GetPrintDialogData()
+        dc = dialog.GetPrintDC()
+
+        dc.StartDoc("MyDoc")
+        dc.StartPage()
+        dc.SetMapMode(wx.MM_POINTS)
+
+        dc.SetTextForeground("black")
+        dc.DrawText(text_to_print, 50, 100)
+
+        dc.EndPage()
+        dc.EndDoc()
+        del dc
+
+        printer = wx.Printer(data)
+        printer_config = wx.PrintData(printer.GetPrintDialogData().GetPrintData())
+        
+        # print('GetAllPages: %d\n' % data.GetAllPages())
+        
+
+        dialog.Destroy()
 
 def rgb2hex(r, g, b):
     '''Convert RGB to hex values.'''
     return "#{:02x}{:02x}{:02x}".format(r, g, b)
 
 # file menu constants.
-file_new: str = 'New            (CTRL+N)'
-file_open: str = 'Open           (CTRL+O)'
-file_save: str = 'Save             (CTRL+S)'
+file_new: str = 'New            CTRL+N'
+file_open: str = 'Open           CTRL+O'
+file_save: str = 'Save             CTRL+S'
+file_print: str = 'Print              CTRL+P'
 
 # edit menu constants.
-edit_cut: str = 'Cut                   (CTRL+X)'
-edit_copy: str = 'Copy                (CTRL+C)'
-edit_paste: str = 'Paste                (CTRL+V)'
-edit_delete: str = 'Delete              (Del)'
+edit_cut: str = 'Cut                   CTRL+X'
+edit_copy: str = 'Copy                CTRL+C'
+edit_paste: str = 'Paste                CTRL+V'
+edit_delete: str = 'Delete              Del'
 
-menu_layout: list = [['&File', [file_new, file_open, file_save, 'Save As', '______________________', 'Exit']],
-                     ['&Edit', [edit_cut, edit_copy, edit_paste, edit_delete]],
-                     ['&Statistics', ['Word Count', 'Line Count', 'Character With Spaces', 'Character Without Spaces', ]],
-                     ['F&ormat', ['Font', ]],
-                     ['&Help', ['About']]]
+
+menu_layout: list = [['&File', [file_new, file_open, file_save, 'Save As', '______________________', file_print, '______________________', 'Exit']],
+                    ['&Edit', [edit_cut, edit_copy, edit_paste, edit_delete]],
+                    ['&Statistics', ['Word Count', 'Line Count', 'Character With Spaces', 'Character Without Spaces', ]],
+                    ['F&ormat', ['Font', ]],
+                    ['&Help', ['About']]]
 
 layout: list = [[sg.Menu(menu_layout)],
                 [sg.Text('New File:', font=('Times New Roman', 10),
-                         size=(WINDOW_WIDTH, 1), key='-FILE_INFO-')],
+                         size=(WINDOW_WIDTH, 1), key='-FILE_INFO-', visible=False)],
                 [sg.Multiline(font=(DEFAULT_FONT_NAME, 12),
-                              size=(WINDOW_WIDTH, WINDOW_HEIGHT), key='-BODY-')]]
+                              size=(WINDOW_WIDTH, WINDOW_HEIGHT), key='-BODY-', reroute_cprint=True)]]
 
-WINDOW = sg.Window('Notepad', layout=layout, margins=(0, 0),
-                   resizable=True, return_keyboard_events=True)
-WINDOW.read(timeout=1)
+WINDOW = sg.Window('untitled - ' + APP_NAME, layout=layout, margins=(0, 0),
+                   resizable=True, return_keyboard_events=True, finalize=True)
+# WINDOW.read(timeout=1)
 WINDOW.maximize()
 WINDOW['-BODY-'].expand(expand_x=True, expand_y=True)
+
+# APPLICATION THEME CHANGING DIALOG - A good place to refer are the following resources -
+# https://github.com/PySimpleGUI/PySimpleGUI/blob/master/DemoPrograms/Demo_Design_Pattern_Multiple_Windows2.py
+# https://github.com/PySimpleGUI/PySimpleGUI/blob/master/DemoPrograms/Demo_Design_Pattern_Multiple_Windows.py
+# https://github.com/PySimpleGUI/PySimpleGUI/blob/master/DemoPrograms/Demo_Design_Pattern_Multiple_Windows1.py
+
+def create_theme_browser():
+    '''Creates a GUI Theme browser dialog to select
+    and apply the application theme.'''
+
+    theme_window_layout = [[sg.Text('Select a theme from the list below and\nclick on Apply for changes to take effect.')],
+                           [sg.Listbox(values=sg.theme_list(), size=(20, 12), key='-THEMELIST-', enable_events=True)],
+                           [sg.Button('Apply', tooltip="Applies the selected theme.", key='-APPLYTHEME-'),
+                            sg.Button('Exit', key='-EXITTHEME-')]]
+
+    # Define the second window
+    # Link it to the first window (master=window)
+    # Assign a key to the window so that it can be easily referenced
+    theme_window = sg.Window(title='Theme Browser', layout=theme_window_layout, finalize=True, modal=True)
+
+    return theme_window
 
 def new_file() -> str:
     ''' Reset body and info bar, and clear FILE_NAME variable '''
@@ -134,7 +193,8 @@ def save_file(file_name: str):
             f.write(VALUES.get('-BODY-'))
         WINDOW['-FILE_INFO-'].update(value=file_name)
     else:
-        save_as()
+        file_name = save_as()
+    WINDOW.set_title(file_name + ' - ' + APP_NAME)
 
 def save_as() -> str:
     ''' Save new file or save existing file with another name '''
@@ -228,14 +288,20 @@ def about():
     sg.PopupQuick('A simple Notepad like application created using\
         PySimpleGUI framework.', auto_close=False)
 
+window1, window2 = WINDOW(), None
 # read the events and take appropriate actions.
 while True:
-    EVENT, VALUES = WINDOW.read()
 
-    if EVENT in (sg.WINDOW_CLOSED, 'Exit'):
+    WIN, EVENT, VALUES = sg.read_all_windows() #WINDOW.read()
+
+    if EVENT in (sg.WINDOW_CLOSED, 'Exit', '-EXITTHEME-'):
         # exit out of the application is close or exit clicked.
-        break
-    
+        WIN.close()
+        if WIN == window2:       # if closing win 2, mark as closed
+            window2 = None
+        else:     # if closing win 1, exit program
+            break
+
     # file menu events.
     if EVENT in (file_new, 'n:78'):
         new_file()
@@ -245,6 +311,8 @@ while True:
         save_file(FILE_NAME)
     if EVENT in ('Save As',):
         FILE_NAME = save_as()
+    if EVENT in (file_print, 'p:80'):
+        ShowPrintDialog()
 
     # edit menu events.
     if EVENT == edit_cut:
@@ -252,6 +320,7 @@ while True:
         tk.clipboard_clear()
         tk.clipboard_append(selected_text)
         tk.update()
+        WINDOW['-BODY-'].Widget.delete("sel.first", "sel.last")
 
     if EVENT == edit_copy:
         selected_text = WINDOW['-BODY-'].Widget.selection_get()
@@ -285,5 +354,7 @@ while True:
                           auto_close=False)
     if EVENT in ('About',):
         about()
+
+    # Format Menu
     if EVENT in ('Font',):
         ShowFontDialog()
