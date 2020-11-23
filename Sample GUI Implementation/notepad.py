@@ -2,6 +2,7 @@
 # pylint: disable=no-member
 # pylint: disable=invalid-name
 
+import os
 import shlex
 from tkinter import Tk
 import wx
@@ -15,9 +16,12 @@ tk.withdraw()
 wx_app = [] # pylint: disable=unused-variable
 wx_app = wx.App(None)
 
+# get the current working directory.
+CURRENT_WORKING_DIRECTORY = os.path.dirname(os.path.realpath(__file__))
+APPLICATION_ICON = CURRENT_WORKING_DIRECTORY + '\\notepad.ico'
 
 # change the default theme.
-# sg.theme('dark grey 9')
+sg.theme('dark grey 9')
 
 WINDOW_WIDTH: int = 90
 WINDOW_HEIGHT: int = 25
@@ -25,6 +29,18 @@ FILE_NAME: str = None
 DEFAULT_FONT_NAME: str = 'Times New Roman'
 APP_NAME: str = 'NotepadPy+'
 SELECTED_THEME: str = ''
+text_to_save: str = ''
+# this is needed to control the displaying of the user prompt while closing.
+# If the user closes the document just before closing the document,
+# we do not want to display the prompt for save changes.
+text_last_saved_manually: str = ''
+
+
+# initialize the print data and set some default values
+pdata = wx.PrintData()
+pdata.SetPaperId(wx.PAPER_A3)
+pdata.SetOrientation(wx.PORTRAIT)
+margins = (wx.Point(15, 15), wx.Point(15, 15))
 
 def ShowFontDialog():
     '''Get a font dialog to display and return all the
@@ -84,31 +100,48 @@ def ShowPrintDialog():
     data.SetMinPage(1)
     data.SetMaxPage(10)
 
-    dialog = wx.PrintDialog(None, data)
-
     text_to_print = VALUES['-BODY-']
+    # lines_to_print = text_to_print.split('\n')
+
+    dialog = wx.PrintDialog(None, data)
     if dialog.ShowModal() == wx.ID_OK:
         data = dialog.GetPrintDialogData()
-        dc = dialog.GetPrintDC()
+        data.GetPrintData().SetPaperId(wx.PAPER_A3)
 
+        dc = dialog.GetPrintDC()
         dc.StartDoc("MyDoc")
         dc.StartPage()
         dc.SetMapMode(wx.MM_POINTS)
 
         dc.SetTextForeground("black")
-        dc.DrawText(text_to_print, 50, 100)
+        dc.DrawText(text_to_print, margins[0][0], margins[1][0])
 
         dc.EndPage()
         dc.EndDoc()
         del dc
 
-        printer = wx.Printer(data)
-        printer_config = wx.PrintData(printer.GetPrintDialogData().GetPrintData())
-        
-        # print('GetAllPages: %d\n' % data.GetAllPages())
-        
-
+        # printer = wx.Printer(data)
         dialog.Destroy()
+
+def ShowPageSetupDialog():
+    '''display the page setup dialog.'''
+    global pdata
+    global margins
+    data = wx.PageSetupDialogData()
+    data.SetPrintData(pdata)
+
+    data.SetDefaultMinMargins(True)
+    data.SetMarginTopLeft(margins[0])
+    data.SetMarginBottomRight(margins[1])
+
+    dlg = wx.PageSetupDialog(None, data)
+    if dlg.ShowModal() == wx.ID_OK:
+        data = dlg.GetPageSetupData()
+        pdata = wx.PrintData(data.GetPrintData()) # force a copy
+        pdata.SetPaperId(data.GetPaperId())
+        margins = (data.GetMarginTopLeft(), data.GetMarginBottomRight())
+
+    dlg.Destroy()
 
 def rgb2hex(r, g, b):
     '''Convert RGB to hex values.'''
@@ -127,7 +160,7 @@ edit_paste: str = 'Paste                CTRL+V'
 edit_delete: str = 'Delete              Del'
 
 
-menu_layout: list = [['&File', [file_new, file_open, file_save, 'Save As', '______________________', file_print, '______________________', 'Exit']],
+menu_layout: list = [['&File', [file_new, file_open, file_save, 'Save As', '______________________', 'Page Setup', file_print, '______________________', 'Exit']],
                     ['&Edit', [edit_cut, edit_copy, edit_paste, edit_delete]],
                     ['&Statistics', ['Word Count', 'Line Count', 'Character With Spaces', 'Character Without Spaces', ]],
                     ['F&ormat', ['Font', ]],
@@ -140,31 +173,18 @@ layout: list = [[sg.Menu(menu_layout)],
                               size=(WINDOW_WIDTH, WINDOW_HEIGHT), key='-BODY-', reroute_cprint=True)]]
 
 WINDOW = sg.Window('untitled - ' + APP_NAME, layout=layout, margins=(0, 0),
-                   resizable=True, return_keyboard_events=True, finalize=True)
-# WINDOW.read(timeout=1)
+                   resizable=True, return_keyboard_events=True, icon=APPLICATION_ICON, finalize=True)
+
+# redefine the callback for window close button by using tkinter code.
+# this is required to delay the event of closing the main window incase 
+# the text is not saved before closing.
+# more details @ https://github.com/PySimpleGUI/PySimpleGUI/issues/3650
+WINDOW.TKroot.protocol("WM_DESTROY_WINDOW", lambda:WINDOW.write_event_value("WIN_CLOSE", ()))
+WINDOW.TKroot.protocol("WM_DELETE_WINDOW",  lambda:WINDOW.write_event_value("WIN_CLOSE", ()))
+
+WINDOW.read(timeout=1)
 WINDOW.maximize()
 WINDOW['-BODY-'].expand(expand_x=True, expand_y=True)
-
-# APPLICATION THEME CHANGING DIALOG - A good place to refer are the following resources -
-# https://github.com/PySimpleGUI/PySimpleGUI/blob/master/DemoPrograms/Demo_Design_Pattern_Multiple_Windows2.py
-# https://github.com/PySimpleGUI/PySimpleGUI/blob/master/DemoPrograms/Demo_Design_Pattern_Multiple_Windows.py
-# https://github.com/PySimpleGUI/PySimpleGUI/blob/master/DemoPrograms/Demo_Design_Pattern_Multiple_Windows1.py
-
-def create_theme_browser():
-    '''Creates a GUI Theme browser dialog to select
-    and apply the application theme.'''
-
-    theme_window_layout = [[sg.Text('Select a theme from the list below and\nclick on Apply for changes to take effect.')],
-                           [sg.Listbox(values=sg.theme_list(), size=(20, 12), key='-THEMELIST-', enable_events=True)],
-                           [sg.Button('Apply', tooltip="Applies the selected theme.", key='-APPLYTHEME-'),
-                            sg.Button('Exit', key='-EXITTHEME-')]]
-
-    # Define the second window
-    # Link it to the first window (master=window)
-    # Assign a key to the window so that it can be easily referenced
-    theme_window = sg.Window(title='Theme Browser', layout=theme_window_layout, finalize=True, modal=True)
-
-    return theme_window
 
 def new_file() -> str:
     ''' Reset body and info bar, and clear FILE_NAME variable '''
@@ -185,27 +205,50 @@ def open_file() -> str:
 
 def save_file(file_name: str):
     ''' Save file instantly if already open; otherwise display `save-as` popup '''
-
+    global text_last_saved_manually
     # Get the filename if already saved in the same session.
     file_name = WINDOW['-FILE_INFO-'].DisplayText
     if file_name not in (None, '', 'New File:'):
         with open(file_name, 'w') as f:
-            f.write(VALUES.get('-BODY-'))
-        WINDOW['-FILE_INFO-'].update(value=file_name)
+            if VALUES is not None:
+                f.write(VALUES.get('-BODY-'))
+                WINDOW['-FILE_INFO-'].update(value=file_name)
+            else:
+                f.write(text_to_save)
+            
+            # this is needed to control the displaying of the user prompt while closing.
+            # If the user closes the document just before closing the document,
+            # we do not want to display the prompt for save changes.
+            text_last_saved_manually = text_to_save
     else:
         file_name = save_as()
-    WINDOW.set_title(file_name + ' - ' + APP_NAME)
+
+
+    # We will skip this line while closing the dialog.
+    if VALUES is not None:
+        WINDOW.set_title(file_name + ' - ' + APP_NAME)
 
 def save_as() -> str:
     ''' Save new file or save existing file with another name '''
+    global text_last_saved_manually
     try:
-        file_name: str = sg.popup_get_file('Save As', save_as=True, no_window=True)
+        file_name: str = sg.popup_get_file('Save As', save_as=True, no_window=True,
+                                           file_types=(('Text Documents', '*.txt'), ('ALL Files', '*.*'),),
+                                           modal=True, default_path="*.txt",
+                                           icon=APPLICATION_ICON)
     except: # pylint: disable=bare-except
         return ''
-    if file_name not in (None, '') and not isinstance(FILE_NAME, tuple):
+    if file_name not in (None, ''):
         with open(file_name, 'w') as f:
-            f.write(VALUES.get('-BODY-'))
-        WINDOW['-FILE_INFO-'].update(value=file_name)
+            if VALUES is not None:
+                f.write(VALUES.get('-BODY-'))
+                WINDOW['-FILE_INFO-'].update(value=file_name)
+            else:
+                f.write(text_to_save)
+        # this is needed to control the displaying of the user prompt while closing.
+        # If the user closes the document just before closing the document,
+        # we do not want to display the prompt for save changes.
+        text_last_saved_manually = text_to_save
     return file_name
 
 def get_word_count():
@@ -213,7 +256,7 @@ def get_word_count():
     total_words: int = 0
     if not validate_text():
         sg.PopupQuick('Enter some text to calculate the number of words.',
-                      title='Text Not Found', auto_close=False)
+                      title='Text Not Found', auto_close=False, modal=True)
         return 0
 
     lines: list = VALUES['-BODY-'].splitlines()
@@ -238,7 +281,7 @@ def character_count():
 
     if not validate_text():
         sg.PopupQuick('Enter some text to calculate the number of characters.',
-                      title='Text Not Found', auto_close=False)
+                      title='Text Not Found', auto_close=False, modal=True)
         return 0
 
     chars = len(VALUES['-BODY-']) - 1
@@ -249,7 +292,7 @@ def characters_without_spaces():
 
     if not validate_text():
         sg.PopupQuick('Enter some text to calculate the number of characters\nwithout spaces.',
-                      title='Text Not Found', auto_close=False)
+                      title='Text Not Found', auto_close=False, modal=True)
         return 0
 
     chars_without_spaces: int = 0
@@ -268,7 +311,7 @@ def get_line_count():
 
     if not validate_text():
         sg.PopupQuick('Enter some text to calculate the number of lines.',
-                      title='Text Not Found', auto_close=False)
+                      title='Text Not Found', auto_close=False, modal=True)
         return 0
 
     text: str = VALUES['-BODY-']
@@ -286,21 +329,36 @@ def about():
     '''About the application'''
 
     sg.PopupQuick('A simple Notepad like application created using\
-        PySimpleGUI framework.', auto_close=False)
+        PySimpleGUI framework.', auto_close=False, modal=True)
 
-window1, window2 = WINDOW(), None
 # read the events and take appropriate actions.
 while True:
 
-    WIN, EVENT, VALUES = sg.read_all_windows() #WINDOW.read()
+    EVENT, VALUES = WINDOW.read()
 
-    if EVENT in (sg.WINDOW_CLOSED, 'Exit', '-EXITTHEME-'):
-        # exit out of the application is close or exit clicked.
-        WIN.close()
-        if WIN == window2:       # if closing win 2, mark as closed
-            window2 = None
-        else:     # if closing win 1, exit program
-            break
+    if EVENT in (sg.WINDOW_CLOSED, 'Exit', "WIN_CLOSE"):
+        # Get the filename if already saved in the same session.
+        file_name = WINDOW['-FILE_INFO-'].DisplayText
+
+        if file_name not in (None, '') and text_to_save.rstrip() != '' and text_last_saved_manually != text_to_save:
+            # display a user prompt incase the note is not yet saved asking the
+            # user 'Do you want to save changes to Untitled?'
+            user_prompt_msg: str = ''
+            if file_name == 'New File:':
+                user_prompt_msg = 'Untitled'
+            else:
+                user_prompt_msg = file_name
+            user_prompt_action = sg.popup_yes_no('Do you want to save changes to ' + user_prompt_msg + "?",
+                                                 title='NotepayPy+', modal=True,
+                                                 icon=APPLICATION_ICON)
+
+            if user_prompt_action == 'Yes':
+                save_file(FILE_NAME)
+            elif user_prompt_action == 'No':
+                break
+
+        # finally breakout of the event loop and end the application.
+        break
 
     # file menu events.
     if EVENT in (file_new, 'n:78'):
@@ -313,6 +371,8 @@ while True:
         FILE_NAME = save_as()
     if EVENT in (file_print, 'p:80'):
         ShowPrintDialog()
+    if EVENT == 'Page Setup':
+        ShowPageSetupDialog()
 
     # edit menu events.
     if EVENT == edit_cut:
@@ -338,23 +398,31 @@ while True:
     if EVENT in ('Word Count',):
         WORDS = get_word_count()
         if WORDS != 0:
-            sg.PopupQuick('Word Count: {:,d}'.format(WORDS), auto_close=False)
+            sg.PopupQuick('Word Count: {:,d}'.format(WORDS), auto_close=False, modal=True)
     if EVENT in ('Line Count',):
         LINES = get_line_count()
         if LINES != 0:
-            sg.PopupQuick('Line Count: {:,d}'.format(LINES), auto_close=False)
+            sg.PopupQuick('Line Count: {:,d}'.format(LINES), auto_close=False, modal=True)
     if EVENT in ('Character With Spaces',):
         CHARS = character_count()
         if CHARS != 0:
-            sg.PopupQuick('Characters With Spaces: {:,d}'.format(CHARS), auto_close=False)
+            sg.PopupQuick('Characters With Spaces: {:,d}'.format(CHARS),
+                          auto_close=False, modal=True)
     if EVENT in ('Character Without Spaces',):
         CHAR_WITHOUT_SPACES = characters_without_spaces()
         if CHAR_WITHOUT_SPACES != 0:
             sg.PopupQuick('Characters Without Spaces: {:,d}'.format(CHAR_WITHOUT_SPACES),
-                          auto_close=False)
+                          auto_close=False, modal=True)
     if EVENT in ('About',):
         about()
 
     # Format Menu
     if EVENT in ('Font',):
         ShowFontDialog()
+
+    # record the text after each event to ensure the
+    # file/text is saved.
+    try:
+        text_to_save = VALUES['-BODY-']
+    except:
+        pass
