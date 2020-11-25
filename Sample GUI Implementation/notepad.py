@@ -189,7 +189,7 @@ layout: list = [[WINDOW_MENU],
                 [sg.Multiline(font=(DEFAULT_FONT_NAME, 12),
                               size=(WINDOW_WIDTH, WINDOW_HEIGHT),
                               key='-BODY-', reroute_cprint=True, enable_events=True)],
-                [sg.StatusBar(text=f'| Ln{Line},Col{Column}', size=(WINDOW_WIDTH, 1),
+                [sg.StatusBar(text=f'| Ln {Line}, Col {Column}', size=(WINDOW_WIDTH, 1),
                               pad=(0, 0), text_color='white', relief=sg.RELIEF_FLAT,
                               justification='right', visible=True, key='status_bar')]]
 
@@ -219,7 +219,7 @@ def open_file() -> str:
     try:
         file_name = sg.popup_get_file('Open File', no_window=True)
     except: # pylint: disable=bare-except
-        return
+        return ''
     if file_name not in (None, '') and not isinstance(file_name, tuple):
         with open(file_name, 'r') as f:
             WINDOW['-BODY-'].update(value=f.read())
@@ -238,7 +238,7 @@ def save_file(file_name: str):
                 WINDOW['-FILE_INFO-'].update(value=file_name)
             else:
                 f.write(text_to_save)
-            
+
             # this is needed to control the displaying of the user prompt while closing.
             # If the user closes the document just before closing the document,
             # we do not want to display the prompt for save changes.
@@ -363,7 +363,9 @@ while True:
         # Get the filename if already saved in the same session.
         file_name = WINDOW['-FILE_INFO-'].DisplayText
 
-        if file_name not in (None, '') and text_to_save.rstrip() != '' and text_last_saved_manually != text_to_save:
+        if file_name not in (None, '') and \
+        text_to_save.rstrip() != '' and \
+        text_last_saved_manually != text_to_save:
             # display a user prompt incase the note is not yet saved asking the
             # user 'Do you want to save changes to Untitled?'
             user_prompt_msg: str = ''
@@ -371,7 +373,8 @@ while True:
                 user_prompt_msg = 'Untitled'
             else:
                 user_prompt_msg = file_name
-            user_prompt_action = sg.popup_yes_no('Do you want to save changes to ' + user_prompt_msg + "?",
+            user_prompt_action = sg.popup_yes_no('Do you want to save changes to ' +
+                                                 user_prompt_msg + "?",
                                                  title='NotepayPy+', modal=True,
                                                  icon=APPLICATION_ICON)
 
@@ -458,13 +461,14 @@ while True:
         else:
             WINDOW['status_bar'].update(visible=False)
             WINDOW['status_bar'].ParentRowFrame.pack_forget()
-            
+
             # Re-design the menu layout to show the updated
             # toggle effect for show/hide status bar button.
             # Supporting Conversation @ https://github.com/PySimpleGUI/PySimpleGUI/issues/1510
             WINDOW_MENU.Update(show_status_menu_layout)
             STATUS_BAR_SWITCH = True
 
+    Column += 1
     # record the text after each event to ensure the
     # file/text is saved.
     try:
