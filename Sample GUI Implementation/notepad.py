@@ -20,6 +20,9 @@ wx_app = wx.App(None)
 CURRENT_WORKING_DIRECTORY = os.path.dirname(os.path.realpath(__file__))
 APPLICATION_ICON = CURRENT_WORKING_DIRECTORY + '\\notepad.ico'
 
+# toggle the status bar.
+STATUS_BAR_SWITCH = False
+
 # change the default theme.
 sg.theme('dark grey 9')
 
@@ -34,6 +37,9 @@ text_to_save: str = ''
 # If the user closes the document just before closing the document,
 # we do not want to display the prompt for save changes.
 text_last_saved_manually: str = ''
+
+Line: int = 1
+Column: int = 1
 
 
 # initialize the print data and set some default values
@@ -160,23 +166,39 @@ edit_paste: str = 'Paste                CTRL+V'
 edit_delete: str = 'Delete              Del'
 
 
-menu_layout: list = [['&File', [file_new, file_open, file_save, 'Save As', '______________________', 'Page Setup', file_print, '______________________', 'Exit']],
+hide_status_menu_layout: list = [['&File', [file_new, file_open, file_save, 'Save As', '______________________', 'Page Setup', file_print, '______________________', 'Exit']],
                     ['&Edit', [edit_cut, edit_copy, edit_paste, edit_delete]],
                     ['&Statistics', ['Word Count', 'Line Count', 'Character With Spaces', 'Character Without Spaces', ]],
                     ['F&ormat', ['Font', ]],
+                    ['&View', ['Hide Status Bar', ]],
                     ['&Help', ['About']]]
 
-layout: list = [[sg.Menu(menu_layout)],
+show_status_menu_layout: list = [['&File', [file_new, file_open, file_save, 'Save As', '______________________', 'Page Setup', file_print, '______________________', 'Exit']],
+                    ['&Edit', [edit_cut, edit_copy, edit_paste, edit_delete]],
+                    ['&Statistics', ['Word Count', 'Line Count', 'Character With Spaces', 'Character Without Spaces', ]],
+                    ['F&ormat', ['Font', ]],
+                    ['&View', ['Show Status Bar', ]],
+                    ['&Help', ['About']]]
+
+# Define and Create the menu layouts independently so as to
+# toggle between Show/Hide the applicationstatus bar.
+WINDOW_MENU = sg.Menu(hide_status_menu_layout)
+layout: list = [[WINDOW_MENU],
                 [sg.Text('New File:', font=('Times New Roman', 10),
                          size=(WINDOW_WIDTH, 1), key='-FILE_INFO-', visible=False)],
                 [sg.Multiline(font=(DEFAULT_FONT_NAME, 12),
-                              size=(WINDOW_WIDTH, WINDOW_HEIGHT), key='-BODY-', reroute_cprint=True)]]
+                              size=(WINDOW_WIDTH, WINDOW_HEIGHT),
+                              key='-BODY-', reroute_cprint=True, enable_events=True)],
+                [sg.StatusBar(text=f'| Ln{Line},Col{Column}', size=(WINDOW_WIDTH, 1),
+                              pad=(0, 0), text_color='white', relief=sg.RELIEF_FLAT,
+                              justification='right', visible=True, key='status_bar')]]
 
 WINDOW = sg.Window('untitled - ' + APP_NAME, layout=layout, margins=(0, 0),
-                   resizable=True, return_keyboard_events=True, icon=APPLICATION_ICON, finalize=True)
+                   resizable=True, return_keyboard_events=True,
+                   icon=APPLICATION_ICON, finalize=True)
 
 # redefine the callback for window close button by using tkinter code.
-# this is required to delay the event of closing the main window incase 
+# this is required to delay the event of closing the main window incase
 # the text is not saved before closing.
 # more details @ https://github.com/PySimpleGUI/PySimpleGUI/issues/3650
 WINDOW.TKroot.protocol("WM_DESTROY_WINDOW", lambda:WINDOW.write_event_value("WIN_CLOSE", ()))
@@ -184,6 +206,7 @@ WINDOW.TKroot.protocol("WM_DELETE_WINDOW",  lambda:WINDOW.write_event_value("WIN
 
 WINDOW.read(timeout=1)
 WINDOW.maximize()
+WINDOW['status_bar'].ParentRowFrame.pack(fill='x')
 WINDOW['-BODY-'].expand(expand_x=True, expand_y=True)
 
 def new_file() -> str:
@@ -419,6 +442,28 @@ while True:
     # Format Menu
     if EVENT in ('Font',):
         ShowFontDialog()
+
+    # Show/Hide Status Bar.
+    if EVENT in ('Hide Status Bar', 'Show Status Bar'):
+        if STATUS_BAR_SWITCH:
+            WINDOW['status_bar'].ParentRowFrame.pack(fill='x')
+            WINDOW['status_bar'].update(visible=True)
+            WINDOW['status_bar'].Widget.pack(fill='x')
+
+            # Re-design the menu layout to show the updated
+            # toggle effect for show/hide status bar button.
+            # Supporting Conversation @ https://github.com/PySimpleGUI/PySimpleGUI/issues/1510
+            WINDOW_MENU.Update(hide_status_menu_layout)
+            STATUS_BAR_SWITCH = False
+        else:
+            WINDOW['status_bar'].update(visible=False)
+            WINDOW['status_bar'].ParentRowFrame.pack_forget()
+            
+            # Re-design the menu layout to show the updated
+            # toggle effect for show/hide status bar button.
+            # Supporting Conversation @ https://github.com/PySimpleGUI/PySimpleGUI/issues/1510
+            WINDOW_MENU.Update(show_status_menu_layout)
+            STATUS_BAR_SWITCH = True
 
     # record the text after each event to ensure the
     # file/text is saved.
