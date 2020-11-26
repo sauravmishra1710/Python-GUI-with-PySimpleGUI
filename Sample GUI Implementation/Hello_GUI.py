@@ -1,3 +1,5 @@
+'''Hello GUI Program'''
+
 import PySimpleGUI as sg
 
 # Define the window's contents
