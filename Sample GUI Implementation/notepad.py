@@ -278,8 +278,8 @@ def get_word_count():
     ''' Get the estimated word count '''
     total_words: int = 0
     if not validate_text():
-        sg.PopupQuick('Enter some text to calculate the number of words.',
-                      title='Text Not Found', auto_close=False, modal=True)
+        ShowMessageBox(title='NotepadPy+ Statistics',
+                       message='Text Not Found.\nEnter some text to calculate the number of words.')
         return 0
 
     lines: list = VALUES['-BODY-'].splitlines()
@@ -303,8 +303,8 @@ def character_count():
     '''Get the total number of characters in the file.'''
 
     if not validate_text():
-        sg.PopupQuick('Enter some text to calculate the number of characters.',
-                      title='Text Not Found', auto_close=False, modal=True)
+        ShowMessageBox(title='NotepadPy+ Statistics',
+                       message='Text Not Found.\nEnter some text to calculate the number of words.')
         return 0
 
     chars = len(VALUES['-BODY-']) - 1
@@ -314,8 +314,8 @@ def characters_without_spaces():
     '''Get the total number of characters in the file.'''
 
     if not validate_text():
-        sg.PopupQuick('Enter some text to calculate the number of characters\nwithout spaces.',
-                      title='Text Not Found', auto_close=False, modal=True)
+        ShowMessageBox(title='NotepadPy+ Statistics',
+                       message='Text Not Found.\nEnter some text to calculate the number of words.')
         return 0
 
     chars_without_spaces: int = 0
@@ -333,8 +333,8 @@ def get_line_count():
     ''' Get the estimated line count '''
 
     if not validate_text():
-        sg.PopupQuick('Enter some text to calculate the number of lines.',
-                      title='Text Not Found', auto_close=False, modal=True)
+        ShowMessageBox(title='NotepadPy+ Statistics',
+                       message='Text Not Found.\nEnter some text to calculate the number of words.')
         return 0
 
     text: str = VALUES['-BODY-']
@@ -348,11 +348,16 @@ def get_line_count():
     line_count: int = len(lines)
     return line_count
 
-def about():
+def ShowMessageBox(title: str, message: str):
+    '''Reusable function to show user popup.'''
+    sg.PopupQuick(message, title=title, auto_close=False,
+                  modal=True, icon=APPLICATION_ICON)
+
+def AboutNotepadPyPlus():
     '''About the application'''
 
-    sg.PopupQuick('A simple Notepad like application created using\
-        PySimpleGUI framework.', auto_close=False, modal=True)
+    ShowMessageBox(title='About NotepadPy+',
+                   message='A simple Notepad like application created using PySimpleGUI framework.')
 
 # read the events and take appropriate actions.
 while True:
@@ -424,23 +429,21 @@ while True:
     if EVENT in ('Word Count',):
         WORDS = get_word_count()
         if WORDS != 0:
-            sg.PopupQuick('Word Count: {:,d}'.format(WORDS), auto_close=False, modal=True)
+            ShowMessageBox(title='NotepadPy+ Statistics', message='Word Count: {:,d}'.format(WORDS))
     if EVENT in ('Line Count',):
         LINES = get_line_count()
         if LINES != 0:
-            sg.PopupQuick('Line Count: {:,d}'.format(LINES), auto_close=False, modal=True)
+            ShowMessageBox(title='NotepadPy+ Statistics', message='Line Count: {:,d}'.format(LINES))
     if EVENT in ('Character With Spaces',):
         CHARS = character_count()
         if CHARS != 0:
-            sg.PopupQuick('Characters With Spaces: {:,d}'.format(CHARS),
-                          auto_close=False, modal=True)
+            ShowMessageBox(title='NotepadPy+ Statistics', message='Characters With Spaces: {:,d}'.format(CHARS))
     if EVENT in ('Character Without Spaces',):
         CHAR_WITHOUT_SPACES = characters_without_spaces()
         if CHAR_WITHOUT_SPACES != 0:
-            sg.PopupQuick('Characters Without Spaces: {:,d}'.format(CHAR_WITHOUT_SPACES),
-                          auto_close=False, modal=True)
+            ShowMessageBox(title='NotepadPy+ Statistics', message='Characters Without Spaces: {:,d}'.format(CHAR_WITHOUT_SPACES))
     if EVENT in ('About',):
-        about()
+        AboutNotepadPyPlus()
 
     # Format Menu
     if EVENT in ('Font',):
