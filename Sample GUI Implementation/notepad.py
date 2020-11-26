@@ -468,7 +468,12 @@ while True:
             WINDOW_MENU.Update(show_status_menu_layout)
             STATUS_BAR_SWITCH = True
 
-    Column += 1
+    # Update the line and column values in the statusbar
+    # with every character / escape sequences keyed-in.
+    if EVENT == '-BODY-':
+        Line, Column = WINDOW['-BODY-'].Widget.index('insert').split('.')
+        WINDOW['status_bar'].update(f'| Ln {Line}, Col {Column}')
+
     # record the text after each event to ensure the
     # file/text is saved.
     try:
