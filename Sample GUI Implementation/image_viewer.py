@@ -22,6 +22,46 @@ import os.path
 import PySimpleGUI as sg
 import cv2
 
+def process_and_view_image():
+    '''Process and display the image.'''
+    try:
+        file_name = os.path.join(
+            VALUES["-FOLDER-"], VALUES["-FILE LIST-"][0]
+        )
+        WINDOW["-IMAGE_FILE-"].update(file_name)
+        image = cv2.imread(file_name) # pylint: disable=no-member
+
+        # Resize the image if the dimension is to large.
+        if image.shape[0] > 999 and image.shape[1] > 768:
+            image = cv2.resize(image, (1024, 768), interpolation=cv2.INTER_NEAREST) # pylint: disable=no-member
+
+        WINDOW["-IMAGE-"].update(data=cv2.imencode('.png', image)[1].tobytes()) # pylint: disable=no-member
+        # WINDOW["-IMAGE-"].update(filename=FILENAME)
+        WINDOW["-STATIC_TEXT-"].update("Image Selected:", font=("Helvetica", 12))
+
+    except: # pylint: disable=bare-except
+        pass
+
+def up_down_arrow_key_selection(arrow_key_event):
+    '''Process the list selection usingt he Up and Down arrow key events.
+    More information related to up/down arrow key seletion on a listbox
+    can be viewed @ https://github.com/PySimpleGUI/PySimpleGUI/issues/1629'''
+
+    try:
+        current_index = WINDOW.Element('-FILE LIST-').Widget.curselection()
+
+        if arrow_key_event == 'Up:38':
+            current_index = (current_index[0] - 1) % WINDOW.Element('-FILE LIST-').Widget.size()
+        elif arrow_key_event == 'Down:40':
+            current_index = (current_index[0] + 1) % WINDOW.Element('-FILE LIST-').Widget.size()
+
+        WINDOW.Element('-FILE LIST-').Update(set_to_index=current_index)
+        WINDOW.Element('-FILE LIST-').Update(scroll_to_index=current_index)
+        WINDOW.write_event_value('-FILE LIST-',
+                                 [WINDOW.Element('-FILE LIST-').GetListValues()[current_index]])
+    except: # pylint: disable=bare-except
+        pass
+
 sg.theme('dark grey 9')
 
 FILE_SELECT_COLUMN_LAYOUT = [
@@ -30,7 +70,8 @@ FILE_SELECT_COLUMN_LAYOUT = [
            readonly=True, disabled_readonly_background_color='#40444B'),
      sg.FolderBrowse(tooltip="Select a folder", key='-FOLDER_BROWSE-'),],
     [sg.Text("Images Retrieved:")],
-    [sg.Listbox(values=[], enable_events=True, size=(80, 45), key="-FILE LIST-")],
+    [sg.Listbox(values=[], enable_events=True, size=(80, 45),
+                key="-FILE LIST-", bind_return_key=True)],
     [sg.Button("Reset", key="-RESET-"), sg.Button("Exit", key="-Exit-")],]
 
 IMAGE_VIEWER_COLUMN_LAYOUT = [
@@ -48,7 +89,7 @@ WINDOW_LAYOUT = [[sg.Column(FILE_SELECT_COLUMN_LAYOUT, key='-COL1-'),
 CURRENT_WORKING_DIRECTORY = os.path.dirname(os.path.realpath(__file__))
 WINDOW = sg.Window("Py Image Viewer", WINDOW_LAYOUT, margins=(0, 0),
                    icon=CURRENT_WORKING_DIRECTORY + "\\img_view.ico",
-                   resizable=False, finalize=True)
+                   resizable=False, finalize=True, return_keyboard_events=True)
 
 # Run the Event Loop
 while True:
@@ -82,22 +123,13 @@ while True:
         WINDOW["-FILE LIST-"].update(FNAMES)
 
     elif EVENT == "-FILE LIST-": # Display the image selected.
-        try:
-            FILENAME = os.path.join(
-                VALUES["-FOLDER-"], VALUES["-FILE LIST-"][0]
-            )
-            WINDOW["-IMAGE_FILE-"].update(FILENAME)
-            IMAGE = cv2.imread(FILENAME) # pylint: disable=no-member
+        process_and_view_image()
 
-            # Resize the image if the dimension is to large.
-            if IMAGE.shape[0] > 999 and IMAGE.shape[1] > 768:
-                IMAGE = cv2.resize(IMAGE, (1024, 768), interpolation=cv2.INTER_NEAREST) # pylint: disable=no-member
-
-            WINDOW["-IMAGE-"].update(data=cv2.imencode('.png', IMAGE)[1].tobytes()) # pylint: disable=no-member
-            # WINDOW["-IMAGE-"].update(filename=FILENAME)
-            WINDOW["-STATIC_TEXT-"].update("Image Selected:", font=("Helvetica", 12))
-
-        except: # pylint: disable=bare-except
-            pass
+    elif EVENT == 'Up:38':
+        up_down_arrow_key_selection(EVENT)
+        process_and_view_image()
+    elif EVENT == 'Down:40':
+        up_down_arrow_key_selection(EVENT)
+        process_and_view_image()
 
 WINDOW.close()
