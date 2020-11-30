@@ -26,10 +26,12 @@ sg.theme('dark grey 9')
 
 FILE_SELECT_COLUMN_LAYOUT = [
     [sg.Text("Image Folder:")],
-    [sg.In(size=(52, 1), enable_events=True, key="-FOLDER-"),
-     sg.FolderBrowse(tooltip="Select a folder"),],
+    [sg.In(size=(73, 1), enable_events=True, key="-FOLDER-",
+           readonly=True, disabled_readonly_background_color='#40444B'),
+     sg.FolderBrowse(tooltip="Select a folder", key='-FOLDER_BROWSE-'),],
     [sg.Text("Images Retrieved:")],
-    [sg.Listbox(values=[], enable_events=True, size=(59, 20), key="-FILE LIST-")],]
+    [sg.Listbox(values=[], enable_events=True, size=(80, 45), key="-FILE LIST-")],
+    [sg.Button("Reset", key="-RESET-"), sg.Button("Exit", key="-Exit-")],]
 
 IMAGE_VIEWER_COLUMN_LAYOUT = [
     [sg.Text("                             Select an image from list", key="-STATIC_TEXT-",
@@ -39,12 +41,14 @@ IMAGE_VIEWER_COLUMN_LAYOUT = [
 ]
 
 # ----- Full Window Layout -----
-WINDOW_LAYOUT = [[sg.Column(FILE_SELECT_COLUMN_LAYOUT),
-                  sg.VSeperator(), sg.Column(IMAGE_VIEWER_COLUMN_LAYOUT)],
-                 [sg.Button("Reset", key="-RESET-"), sg.Button("Exit", key="-Exit-")],]
+WINDOW_LAYOUT = [[sg.Column(FILE_SELECT_COLUMN_LAYOUT, key='-COL1-'),
+                  sg.VSeperator(key='-VSEP-'),
+                  sg.Column(IMAGE_VIEWER_COLUMN_LAYOUT, key='-COL2-')],]
 
 CURRENT_WORKING_DIRECTORY = os.path.dirname(os.path.realpath(__file__))
-WINDOW = sg.Window("Image Viewer", WINDOW_LAYOUT, icon=CURRENT_WORKING_DIRECTORY + "\\img_view.ico")
+WINDOW = sg.Window("Py Image Viewer", WINDOW_LAYOUT, margins=(0, 0),
+                   icon=CURRENT_WORKING_DIRECTORY + "\\img_view.ico",
+                   resizable=False, finalize=True)
 
 # Run the Event Loop
 while True:
