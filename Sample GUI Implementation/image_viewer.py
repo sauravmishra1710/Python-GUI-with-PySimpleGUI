@@ -1,4 +1,4 @@
-'''IMAGE VIEWER
+'''Py IMAGE VIEWER
 
 PySimpleGUI reads images in PNG, GIF, PPM/PGM format.
 JPEGs cannot be shown because tkinter does not naively support these formats.
@@ -125,10 +125,8 @@ while True:
     elif EVENT == "-FILE LIST-": # Display the image selected.
         process_and_view_image()
 
-    elif EVENT == 'Up:38':
-        up_down_arrow_key_selection(EVENT)
-        process_and_view_image()
-    elif EVENT == 'Down:40':
+    # Listbox Navigation using Up/Down Arrow keys.
+    elif EVENT in ('Up:38', 'Down:40'):
         up_down_arrow_key_selection(EVENT)
         process_and_view_image()
 
