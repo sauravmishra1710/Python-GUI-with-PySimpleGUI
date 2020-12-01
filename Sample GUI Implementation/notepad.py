@@ -224,6 +224,8 @@ def open_file() -> str:
         with open(file_name, 'r') as f:
             WINDOW['-BODY-'].update(value=f.read())
         WINDOW['-FILE_INFO-'].update(value=file_name)
+    
+    WINDOW.set_title(file_name + ' - ' + APP_NAME)
     return file_name
 
 def save_file(file_name: str):
@@ -437,11 +439,13 @@ while True:
     if EVENT in ('Character With Spaces',):
         CHARS = character_count()
         if CHARS != 0:
-            ShowMessageBox(title='NotepadPy+ Statistics', message='Characters With Spaces: {:,d}'.format(CHARS))
+            ShowMessageBox(title='NotepadPy+ Statistics',
+                           message='Characters With Spaces: {:,d}'.format(CHARS))
     if EVENT in ('Character Without Spaces',):
         CHAR_WITHOUT_SPACES = characters_without_spaces()
         if CHAR_WITHOUT_SPACES != 0:
-            ShowMessageBox(title='NotepadPy+ Statistics', message='Characters Without Spaces: {:,d}'.format(CHAR_WITHOUT_SPACES))
+            ShowMessageBox(title='NotepadPy+ Statistics',
+                           message='Characters Without Spaces: {:,d}'.format(CHAR_WITHOUT_SPACES))
     if EVENT in ('About',):
         AboutNotepadPyPlus()
 
@@ -481,5 +485,5 @@ while True:
     # file/text is saved.
     try:
         text_to_save = VALUES['-BODY-']
-    except:
+    except: # pylint: disable=bare-except
         pass
