@@ -216,6 +216,15 @@ def new_file() -> str:
     global text_last_saved_manually
     global text_to_save
 
+    fname = WINDOW['-FILE_INFO-'].DisplayText
+
+    save_current_file = SaveBeforeClose(fname)
+
+    if save_current_file == 'Yes':
+        save_file(fname)
+    elif save_current_file == 'No':
+        pass
+
     WINDOW['-BODY-'].update(value='')
     WINDOW['-FILE_INFO-'].update(value='New File:')
     WINDOW.set_title('untitled - ' + APP_NAME)
@@ -223,7 +232,20 @@ def new_file() -> str:
     text_to_save = ''
 
 def open_file() -> str:
-    ''' Open file and update the infobar '''
+    ''' Open file and update the infobar.'''
+
+    global text_last_saved_manually
+    fname = WINDOW['-FILE_INFO-'].DisplayText
+
+    save_current_file = SaveBeforeClose(fname)
+
+    if save_current_file == 'Yes':
+        save_file(fname)
+    elif save_current_file == 'No':
+        pass
+
+    WINDOW['-BODY-'].update(value='')
+
     try:
         file_name = sg.popup_get_file('Open File', no_window=True)
     except: # pylint: disable=bare-except
@@ -234,6 +256,7 @@ def open_file() -> str:
         WINDOW['-FILE_INFO-'].update(value=file_name)
     
     WINDOW.set_title(file_name + ' - ' + APP_NAME)
+    text_last_saved_manually = VALUES.get('-BODY-')
     return file_name
 
 def save_file(file_name: str):
@@ -369,6 +392,29 @@ def AboutNotepadPyPlus():
     ShowMessageBox(title='About NotepadPy+',
                    message='A simple Notepad like application created using PySimpleGUI framework.')
 
+def SaveBeforeClose(fname: str):
+    '''Save before close if the user wants to save
+    the documentbefore closing the application.'''
+
+    save_before_close: str = 'No'
+    if fname not in (None, '') and \
+        text_to_save.rstrip() != '' and \
+        text_last_saved_manually != text_to_save:
+        # display a user prompt incase the note is not yet saved asking the
+        # user 'Do you want to save changes to Untitled?'
+        user_prompt_msg: str = ''
+        if fname == 'New File:':
+            user_prompt_msg = 'Untitled'
+        else:
+            user_prompt_msg = fname
+
+        save_before_close = sg.popup_yes_no('Do you want to save changes to ' +
+                                            user_prompt_msg + "?",
+                                            title='NotepayPy+', modal=True,
+                                            icon=APPLICATION_ICON)
+
+    return save_before_close
+
 # read the events and take appropriate actions.
 while True:
 
@@ -378,25 +424,12 @@ while True:
         # Get the filename if already saved in the same session.
         file_name = WINDOW['-FILE_INFO-'].DisplayText
 
-        if file_name not in (None, '') and \
-        text_to_save.rstrip() != '' and \
-        text_last_saved_manually != text_to_save:
-            # display a user prompt incase the note is not yet saved asking the
-            # user 'Do you want to save changes to Untitled?'
-            user_prompt_msg: str = ''
-            if file_name == 'New File:':
-                user_prompt_msg = 'Untitled'
-            else:
-                user_prompt_msg = file_name
-            user_prompt_action = sg.popup_yes_no('Do you want to save changes to ' +
-                                                 user_prompt_msg + "?",
-                                                 title='NotepayPy+', modal=True,
-                                                 icon=APPLICATION_ICON)
+        user_prompt_action = SaveBeforeClose(file_name)
 
-            if user_prompt_action == 'Yes':
-                save_file(FILE_NAME)
-            elif user_prompt_action == 'No':
-                break
+        if user_prompt_action == 'Yes':
+            save_file(FILE_NAME)
+        elif user_prompt_action == 'No':
+            break
 
         # finally breakout of the event loop and end the application.
         break
@@ -516,9 +549,10 @@ while True:
     # record the text after each event to ensure the
     # file/text is saved.
     try:
-        # if File -> New menu option is chosen and the new blank editor window is closed, then we do 
+        # if File -> New menu option is chosen and the new blank editor window is closed, then we do
         # not want to display the Save File prompt. Executing this block on the event of a new file
-        # resets the 'text_to_save' variable to old text in the editor and causes to display the save prompt.
+        # resets the 'text_to_save' variable to old text in the editor and 
+        # causes to display the save prompt.
         if EVENT != file_new:
             text_to_save = VALUES['-BODY-']
     except: # pylint: disable=bare-except
