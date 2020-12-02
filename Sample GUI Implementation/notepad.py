@@ -33,6 +33,7 @@ DEFAULT_FONT_NAME: str = 'Times New Roman'
 APP_NAME: str = 'NotepadPy+'
 SELECTED_THEME: str = ''
 text_to_save: str = ''
+selected_text: str = ''
 # this is needed to control the displaying of the user prompt while closing.
 # If the user closes the document just before closing the document,
 # we do not want to display the prompt for save changes.
@@ -211,8 +212,15 @@ WINDOW['-BODY-'].expand(expand_x=True, expand_y=True)
 
 def new_file() -> str:
     ''' Reset body and info bar, and clear FILE_NAME variable '''
+
+    global text_last_saved_manually
+    global text_to_save
+
     WINDOW['-BODY-'].update(value='')
     WINDOW['-FILE_INFO-'].update(value='New File:')
+    WINDOW.set_title('untitled - ' + APP_NAME)
+    text_last_saved_manually = ''
+    text_to_save = ''
 
 def open_file() -> str:
     ''' Open file and update the infobar '''
@@ -409,24 +417,48 @@ while True:
 
     # edit menu events.
     if EVENT == edit_cut:
-        selected_text = WINDOW['-BODY-'].Widget.selection_get()
-        tk.clipboard_clear()
-        tk.clipboard_append(selected_text)
-        tk.update()
-        WINDOW['-BODY-'].Widget.delete("sel.first", "sel.last")
+        try:
+            selected_text = WINDOW['-BODY-'].Widget.selection_get()
+            tk.clipboard_clear()
+            tk.clipboard_append(selected_text)
+            tk.update()
+            WINDOW['-BODY-'].Widget.delete("sel.first", "sel.last")
+        except: # pylint: disable=bare-except
+            selected_text = ''
+            ShowMessageBox(title='Text Selection Error',
+                           message='An active text selection was not found. Please select some text to cut.')
 
     if EVENT == edit_copy:
-        selected_text = WINDOW['-BODY-'].Widget.selection_get()
-        tk.clipboard_clear()
-        tk.clipboard_append(selected_text)
-        tk.update() # now it stays on the clipboard after the window is closed
+        try:
+            selected_text = WINDOW['-BODY-'].Widget.selection_get()
+            tk.clipboard_clear()
+            tk.clipboard_append(selected_text)
+            tk.update() # now it stays on the clipboard after the window is closed
+        except: # pylint: disable=bare-except
+            selected_text = ''
+            ShowMessageBox(title='Text Selection Error',
+                           message='An active text selection was not found. Please select some text to copy.')
 
     if EVENT == edit_paste:
         clip_text = tk.clipboard_get()
+
+        try:
+            selected_text = WINDOW['-BODY-'].Widget.selection_get()
+        except: # pylint: disable=bare-except
+            selected_text = ''
+
+        if selected_text != '':
+            WINDOW['-BODY-'].Widget.delete("sel.first", "sel.last")
+
         WINDOW['-BODY-'].Widget.insert("insert", clip_text)
 
     if EVENT == edit_delete:
-        WINDOW['-BODY-'].Widget.delete("sel.first", "sel.last")
+        try:
+            WINDOW['-BODY-'].Widget.delete("sel.first", "sel.last")
+        except:
+            selected_text = ''
+            ShowMessageBox(title='Text Selection Error',
+                           message='An active text selection was not found. Please select some text to delete.')
 
     if EVENT in ('Word Count',):
         WORDS = get_word_count()
@@ -484,6 +516,10 @@ while True:
     # record the text after each event to ensure the
     # file/text is saved.
     try:
-        text_to_save = VALUES['-BODY-']
+        # if File -> New menu option is chosen and the new blank editor window is closed, then we do 
+        # not want to display the Save File prompt. Executing this block on the event of a new file
+        # resets the 'text_to_save' variable to old text in the editor and causes to display the save prompt.
+        if EVENT != file_new:
+            text_to_save = VALUES['-BODY-']
     except: # pylint: disable=bare-except
         pass
