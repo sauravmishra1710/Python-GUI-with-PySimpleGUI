@@ -557,3 +557,6 @@ while True:
             text_to_save = VALUES['-BODY-']
     except: # pylint: disable=bare-except
         pass
+
+    # Set focus to the editor.
+    WINDOW.Element('-BODY-').SetFocus()
