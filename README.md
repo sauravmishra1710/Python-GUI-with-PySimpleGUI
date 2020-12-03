@@ -23,9 +23,17 @@ A simple application built using PySimpleGUI to allow documenting text files, sa
 **Executable @** https://github.com/sauravmishra1710/Python-GUI-with-PySimpleGUI/tree/main/Sample%20Executables/NotepadPy%2B.
 
 **Source Code @** https://github.com/sauravmishra1710/Python-GUI-with-PySimpleGUI/blob/main/Sample%20GUI%20Implementation/notepad.py
+
+**Demo**
+
+![NotepadPy+](https://github.com/sauravmishra1710/Python-GUI-with-PySimpleGUI/blob/main/Sample%20Executables/NotepadPy%2B/NotepadPy%2B%20Demo.gif)
                   
 ## PyImageViewer
 
 A simple image viewer application. Loads all the images (jpegs, pngs, etc..) from the selected directory to a list comtrol to be able to view.
 
 **Source Code @** https://github.com/sauravmishra1710/Python-GUI-with-PySimpleGUI/blob/main/Sample%20GUI%20Implementation/image_viewer.py
+
+**Snapshot**
+
+
