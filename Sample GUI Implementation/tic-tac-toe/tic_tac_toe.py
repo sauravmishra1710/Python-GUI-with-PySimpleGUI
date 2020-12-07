@@ -4,6 +4,8 @@ import os
 import numpy as np
 import PySimpleGUI as sg
 
+INIT_WINDOW = None
+
 CURRENT_WORKING_DIRECTORY = os.path.dirname(os.path.realpath(__file__))
 X_IMAGE = CURRENT_WORKING_DIRECTORY + '\\X.png'
 X_RED = CURRENT_WORKING_DIRECTORY + '\\X_Red.png'
@@ -13,6 +15,8 @@ GAME_ICON = CURRENT_WORKING_DIRECTORY + '\\tictactoe.ico'
 
 START_GAME: bool = False
 CHECK_FOR_WINNER: bool = False
+MAIN_DIAGONAL_IS_WINNER: bool = False
+CURENT_BOARD_WON: bool = False
 
 ROWS, COLS = (3, 3) 
 GAME_PROGRESS_ARRAY = [['' for i in range(COLS)] for j in range(ROWS)]
@@ -30,18 +34,20 @@ def progress_game(key: str, player_marker: str):
     checks for is winning condition.'''
 
     global GAME_PROGRESS_ARRAY
+    global CURENT_BOARD_WON
 
     row, column = split(key)
     GAME_PROGRESS_ARRAY[row][column] = player_marker
 
     if CHECK_FOR_WINNER:
-        is_winning()
+        if is_winning():
+            CURENT_BOARD_WON = True
 
 def is_row_column_diagonal_complete(row_col_num: int = -1, is_row: bool = True, is_diagonal: bool = False):
     '''checks if the given row or column is complete
     to proceed with a winner.'''
 
-    if is_diagonal == False and row_col_num != -1:
+    if is_diagonal is False and row_col_num != -1:
         if is_row:
             row = row_col_num
             if GAME_PROGRESS_ARRAY[row][0] != '' and \
@@ -69,30 +75,50 @@ def is_row_column_diagonal_complete(row_col_num: int = -1, is_row: bool = True, 
             return True
 
 
-def mark_the_winner(row_column_index: int, row_as_winner: bool):
-    '''marks the winner row/column by updating 
+def mark_the_winner(row_is_winner: bool, row_column_index: int = -1, diagonal_is_winner: bool = False):
+    '''marks the winner row/column by updating
     the button row/column.'''
 
-    if row_as_winner:
-        row = row_column_index
-        if GAME_PROGRESS_ARRAY[row][0] == 'X':
-            GAME_BOARD[str(row)+str(0)].update(image_filename=X_RED)
-            GAME_BOARD[str(row)+str(1)].update(image_filename=X_RED)
-            GAME_BOARD[str(row)+str(2)].update(image_filename=X_RED)
+    if not diagonal_is_winner and row_column_index != -1:
+        if row_is_winner:
+            row = row_column_index
+            if GAME_PROGRESS_ARRAY[row][0] == 'X':
+                GAME_BOARD[str(row)+str(0)].update(image_filename=X_RED)
+                GAME_BOARD[str(row)+str(1)].update(image_filename=X_RED)
+                GAME_BOARD[str(row)+str(2)].update(image_filename=X_RED)
+            else:
+                GAME_BOARD[str(row)+str(0)].update(image_filename=O_RED)
+                GAME_BOARD[str(row)+str(1)].update(image_filename=O_RED)
+                GAME_BOARD[str(row)+str(2)].update(image_filename=O_RED)
         else:
-            GAME_BOARD[str(row)+str(0)].update(image_filename=O_RED)
-            GAME_BOARD[str(row)+str(1)].update(image_filename=O_RED)
-            GAME_BOARD[str(row)+str(2)].update(image_filename=O_RED)
+            col = row_column_index
+            if GAME_PROGRESS_ARRAY[0][col] == 'X':
+                GAME_BOARD[str(0)+str(col)].update(image_filename=X_RED)
+                GAME_BOARD[str(1)+str(col)].update(image_filename=X_RED)
+                GAME_BOARD[str(2)+str(col)].update(image_filename=X_RED)
+            else:
+                GAME_BOARD[str(0)+str(col)].update(image_filename=O_RED)
+                GAME_BOARD[str(1)+str(col)].update(image_filename=O_RED)
+                GAME_BOARD[str(2)+str(col)].update(image_filename=O_RED)
     else:
-        col = row_column_index
-        if GAME_PROGRESS_ARRAY[0][col] == 'X':
-            GAME_BOARD[str(0)+str(col)].update(image_filename=X_RED)
-            GAME_BOARD[str(1)+str(col)].update(image_filename=X_RED)
-            GAME_BOARD[str(2)+str(col)].update(image_filename=X_RED)
+        if MAIN_DIAGONAL_IS_WINNER:
+            if GAME_PROGRESS_ARRAY[1][1] == 'X':
+                GAME_BOARD[str(0)+str(0)].update(image_filename=X_RED)
+                GAME_BOARD[str(1)+str(1)].update(image_filename=X_RED)
+                GAME_BOARD[str(2)+str(2)].update(image_filename=X_RED)
+            else:
+                GAME_BOARD[str(0)+str(0)].update(image_filename=O_RED)
+                GAME_BOARD[str(1)+str(1)].update(image_filename=O_RED)
+                GAME_BOARD[str(2)+str(2)].update(image_filename=O_RED)
         else:
-            GAME_BOARD[str(0)+str(col)].update(image_filename=O_RED)
-            GAME_BOARD[str(1)+str(col)].update(image_filename=O_RED)
-            GAME_BOARD[str(2)+str(col)].update(image_filename=O_RED)
+            if GAME_PROGRESS_ARRAY[1][1] == 'X':
+                GAME_BOARD[str(0)+str(2)].update(image_filename=X_RED)
+                GAME_BOARD[str(1)+str(1)].update(image_filename=X_RED)
+                GAME_BOARD[str(2)+str(0)].update(image_filename=X_RED)
+            else:
+                GAME_BOARD[str(0)+str(2)].update(image_filename=O_RED)
+                GAME_BOARD[str(1)+str(1)].update(image_filename=O_RED)
+                GAME_BOARD[str(2)+str(0)].update(image_filename=O_RED)
 
 def is_winning():
     '''evaluated the current state of the gameboard
@@ -100,13 +126,14 @@ def is_winning():
 
     global GAME_PROGRESS_ARRAY
     global CHECK_FOR_WINNER
+    global MAIN_DIAGONAL_IS_WINNER
 
     # check for the row wise sequence.
     for row in range(ROWS):
         if is_row_column_diagonal_complete(row_col_num=row, is_row=True):
             if GAME_PROGRESS_ARRAY[row][0] == GAME_PROGRESS_ARRAY[row][1] == GAME_PROGRESS_ARRAY[row][2]:
-                mark_the_winner(row_column_index=row, row_as_winner=True)
-                sg.popup('winnner', grab_anywhere=True)
+                mark_the_winner(row_is_winner=True, row_column_index=row)
+                display_winner_and_continue(winning_marker=GAME_PROGRESS_ARRAY[row][0])
                 CHECK_FOR_WINNER = False
                 return True
 
@@ -114,25 +141,45 @@ def is_winning():
     for col in range(COLS):
         if is_row_column_diagonal_complete(row_col_num=col, is_row=False):
             if GAME_PROGRESS_ARRAY[0][col] == GAME_PROGRESS_ARRAY[1][col] == GAME_PROGRESS_ARRAY[2][col]:
-                mark_the_winner(row_column_index=col, row_as_winner=False)
-                sg.popup('winnner')
+                mark_the_winner(row_is_winner=False, row_column_index=col)
+                display_winner_and_continue(winning_marker=GAME_PROGRESS_ARRAY[0][col])
                 CHECK_FOR_WINNER = False
                 return True
     
     # check for the 2 diagonals for a winning sequence.
     if is_row_column_diagonal_complete(is_diagonal=True):
         if GAME_PROGRESS_ARRAY[0][0] == GAME_PROGRESS_ARRAY[1][1] == GAME_PROGRESS_ARRAY[2][2]:
-                # mark_the_winner(row_column_index=col, row_as_winner=False)
-                sg.popup('winnner')
-                CHECK_FOR_WINNER = False
-                return True
+            MAIN_DIAGONAL_IS_WINNER = True
+            mark_the_winner(row_column_index=-1, row_is_winner=False, diagonal_is_winner=True)
+            display_winner_and_continue(winning_marker=GAME_PROGRESS_ARRAY[1][1])
+            CHECK_FOR_WINNER = False
+            return True
         elif GAME_PROGRESS_ARRAY[2][0] == GAME_PROGRESS_ARRAY[1][1] == GAME_PROGRESS_ARRAY[0][2]:
-                # mark_the_winner(row_column_index=col, row_as_winner=False)
-                sg.popup('winnner')
-                CHECK_FOR_WINNER = False
-                return True
+            mark_the_winner(row_column_index=-1, row_is_winner=False, diagonal_is_winner=True)
+            display_winner_and_continue(winning_marker=GAME_PROGRESS_ARRAY[1][1])
+            CHECK_FOR_WINNER = False
+            return True
 
+def display_winner_and_continue(winning_marker: str):
+    '''display the winner of the current board.'''
 
+    global INIT_WINDOW
+
+    if winning_marker == PLAYER1_MARKER:
+        continue_with_same_player = sg.PopupYesNo('The Winner is ' + PLAYER1_NAME + '.\nDo you want to play another game with the current players?',
+                                      title='Board Winner!', text_color='darkblue', icon=GAME_ICON,
+                                      grab_anywhere=True, font=('Blackadder ITC', 20))
+    elif winning_marker == PLAYER2_MARKER:
+        continue_with_same_player = sg.PopupYesNo('The Winner is ' + PLAYER2_NAME + '.\nDo you want to play another game with the current players?',
+                                      title='Board Winner!', text_color='darkblue', icon=GAME_ICON,
+                                      grab_anywhere=True, font=('Blackadder ITC', 20))
+
+    if continue_with_same_player == 'Yes':
+        GAME_BOARD.close()
+        initialize_game_board()
+    elif continue_with_same_player == 'No' and not INIT_WINDOW:
+        GAME_BOARD.hide()
+        INIT_WINDOW = init_game_window()
 
 
 def init_game_window():
@@ -182,6 +229,7 @@ while True:
                         INIT_WINDOW.close()
 
 INIT_WINDOW.close()
+INIT_WINDOW = None
 
 STEP_COUNTER: int = 0
 PLAYER_SWITCH = True
@@ -189,16 +237,23 @@ PLAYER1_MARKED_CELLS: list = []
 PLAYER2_MARKED_CELLS: list = []
 if START_GAME:
 
-    GAME_BOARD_LAYOUT = [[sg.Text('Player 1: ' + PLAYER1_NAME, key='-P1-', text_color='darkblue')],
-                         [sg.Text('Player 2: ' + PLAYER2_NAME, key='-P2-', text_color='white')],
-                         [sg.Text(PLAYER1_NAME + "'s Marker: " + PLAYER1_MARKER)],
-                         [sg.Text(PLAYER2_NAME + "'s Marker: " + PLAYER2_MARKER)],
-                         [sg.Text('')]]
+    def initialize_game_board():
+        '''initialize the game board.'''
 
-    GAME_BOARD_LAYOUT += [[sg.Button(' ', size=(8, 4), key=str(j)+str(i))
-                           for i in range(3)] for j in range(3)]
+        GAME_BOARD_LAYOUT = [[sg.Text('Player 1: ' + PLAYER1_NAME, key='-P1-', text_color='darkblue')],
+                            [sg.Text('Player 2: ' + PLAYER2_NAME, key='-P2-', text_color='white')],
+                            [sg.Text(PLAYER1_NAME + "'s Marker: " + PLAYER1_MARKER)],
+                            [sg.Text(PLAYER2_NAME + "'s Marker: " + PLAYER2_MARKER)],
+                            [sg.Text('')]]
 
-    GAME_BOARD = sg.Window('Tic Tac Toe', icon=GAME_ICON).Layout(GAME_BOARD_LAYOUT)
+        GAME_BOARD_LAYOUT += [[sg.Button(' ', size=(8, 4), key=str(j)+str(i))
+                               for i in range(3)] for j in range(3)]
+
+        BOARD = sg.Window('Tic Tac Toe', icon=GAME_ICON).Layout(GAME_BOARD_LAYOUT)
+
+        return BOARD
+    
+    GAME_BOARD = initialize_game_board()
 
     while True:
 
@@ -228,10 +283,17 @@ if START_GAME:
             GAME_BOARD['-P1-'].update(text_color='white')
             GAME_BOARD['-P2-'].update(text_color='darkblue')
 
-            GAME_BOARD[GAME_EVENT].update(image_filename=X_IMAGE)
+            if PLAYER1_MARKER == 'X':
+                GAME_BOARD[GAME_EVENT].update(image_filename=X_IMAGE)
+            else:
+                GAME_BOARD[GAME_EVENT].update(image_filename=O_IMAGE)
+
             GAME_BOARD[GAME_EVENT].update(disabled=True)
 
             progress_game(GAME_EVENT, PLAYER1_MARKER)
+
+            if CURENT_BOARD_WON:
+                break
         elif GAME_BOARD[GAME_EVENT].get_text() == PLAYER2_MARKER:
             # increase the step counter.
             # The minimum number of steps required to win the game is 5
@@ -242,11 +304,17 @@ if START_GAME:
             GAME_BOARD['-P1-'].update(text_color='darkblue')
             GAME_BOARD['-P2-'].update(text_color='white')
 
-            GAME_BOARD[GAME_EVENT].update(image_filename=O_IMAGE)
+            if PLAYER2_MARKER == 'X':
+                GAME_BOARD[GAME_EVENT].update(image_filename=X_IMAGE)
+            else:
+                GAME_BOARD[GAME_EVENT].update(image_filename=O_IMAGE)
+
             GAME_BOARD[GAME_EVENT].update(disabled=True)
 
             progress_game(GAME_EVENT, PLAYER2_MARKER)
 
+            if CURENT_BOARD_WON:
+                break            
         # The minimum number of steps required
         # to win the game board is 5.
         if STEP_COUNTER == 4:
