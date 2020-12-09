@@ -92,6 +92,10 @@ def progress_game(key: str, player_marker: str):
         game_won, winning_marker = is_winning()
         if game_won:
             continue_with_next_game = display_winner_and_continue(winning_marker=winning_marker)
+        else:
+            # GAME DRAWN - GAME_PROGRESS_ARRAY is full and we do not have a winner.
+            if np.all((GAME_PROGRESS_ARRAY != '')):
+                continue_with_next_game = display_winner_and_continue(winning_marker='')
 
     return continue_with_next_game
 
@@ -240,12 +244,13 @@ def display_winner_and_continue(winning_marker: str):
 
     if winning_marker == PLAYER1_MARKER:
         popup_result = sg.PopupYesNo('The Winner is ' + PLAYER1_NAME + '.\nDo you want to play another game with the current players?',
-                                     title='Board Winner!', text_color='darkblue', icon=GAME_ICON,
-                                     grab_anywhere=True, font=('Blackadder ITC', 20))
+                                     title='Board Winner!', text_color='darkblue', icon=GAME_ICON, grab_anywhere=True)
     elif winning_marker == PLAYER2_MARKER:
         popup_result = sg.PopupYesNo('The Winner is ' + PLAYER2_NAME + '.\nDo you want to play another game with the current players?',
-                                     title='Board Winner!', text_color='darkblue', icon=GAME_ICON,
-                                     grab_anywhere=True, font=('Blackadder ITC', 20))
+                                     title='Board Winner!', text_color='darkblue', icon=GAME_ICON, grab_anywhere=True)
+    else: # game drawn
+        popup_result = sg.PopupYesNo('The Game is DRAWN.\nDo you want to play another game with the current players?',
+                                     title='Board Drawn!', text_color='darkblue', icon=GAME_ICON, grab_anywhere=True)
 
     return popup_result
 
@@ -265,7 +270,7 @@ def init_game_window():
 
     return sg.Window('Tic Tac Toe Options', init_game_layout, icon=GAME_ICON, finalize=True)
 
-def reset_game_board():
+def reset_game_board(reset_board: str):
     '''Resets the current game board and re-initializes all the
     game parameters to continue playing the game with the same players.'''
 
@@ -277,7 +282,9 @@ def reset_game_board():
     global PLAYER_SWITCH
     global MAIN_DIAGONAL_IS_WINNER
 
-    GAME_BOARD = initialize_game_board()
+    if reset_board == 'Yes':
+        GAME_BOARD = initialize_game_board()
+
     GAME_PROGRESS_ARRAY = [['' for i in range(COLS)] for j in range(ROWS)]
     GAME_PROGRESS_ARRAY = np.array(GAME_PROGRESS_ARRAY, dtype=str)
     STEP_COUNTER = 0
@@ -294,14 +301,17 @@ def start_next_session(user_choice: str):
 
     global INIT_WINDOW
     global GAME_BOARD
-    
+
     if user_choice == 'Yes':
         # retain the players and reset the board state.
         GAME_BOARD.Close()
-        reset_game_board()
+        GAME_BOARD = None
+        reset_game_board(reset_board='Yes')
     elif user_choice == 'No':
         # return to the game init dialog to start over with new set of players.
         GAME_BOARD.Close()
+        GAME_BOARD = None
+        reset_game_board(reset_board='No')
         INIT_WINDOW = init_game_window()
 
 def initialize_game_board():
@@ -376,6 +386,7 @@ while True:
     if START_GAME and EVENT != '-RESET-':
 
         if EVENT not in ('-START-', 'WIN_CLOSE', '-EXIT-'):
+
             CURRENT_MARKER = GAME_BOARD.Element(EVENT).get_text()
             GAME_BOARD.Element(EVENT).update(PLAYER1_MARKER if CURRENT_MARKER == ' ' and\
                                              PLAYER_SWITCH is True else PLAYER2_MARKER if CURRENT_MARKER == ' ' and\
@@ -444,4 +455,5 @@ while True:
                                      title='Game Reset', icon=GAME_ICON, grab_anywhere=True)
         if RESET_GAME == 'Yes':
             GAME_BOARD.Close()
-            reset_game_board()
+            GAME_BOARD = None
+            reset_game_board(reset_board='Yes')
