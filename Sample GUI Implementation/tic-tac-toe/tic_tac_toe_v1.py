@@ -46,7 +46,6 @@ GAME_ICON = CURRENT_WORKING_DIRECTORY + '\\tictactoe.ico'
 START_GAME: bool = False
 CHECK_FOR_WINNER: bool = False
 MAIN_DIAGONAL_IS_WINNER: bool = False
-CURENT_BOARD_WON: bool = False
 CONTINUE_WITH_NEXT_GAME: str = ''
 STEP_COUNTER: int = 0
 PLAYER_SWITCH = True
@@ -56,7 +55,7 @@ PLAYER1_MARKER: str = ''
 PLAYER2_NAME: str = ''
 PLAYER2_MARKER: str = ''
 
-ROWS, COLS = (3, 3) 
+ROWS, COLS = (3, 3)
 GAME_PROGRESS_ARRAY = [['' for i in range(COLS)] for j in range(ROWS)]
 GAME_PROGRESS_ARRAY = np.array(GAME_PROGRESS_ARRAY, dtype=str)
 # WINNING_PATTERNS: list = [['00', '10', '20'], ['01', '11', '21'], ['02', '12', '22'], # rows
@@ -69,20 +68,29 @@ def split(word):
 
 def progress_game(key: str, player_marker: str):
     '''populated the 'GAME_PROGRESS_ARRAY' and
-    checks for is winning condition.'''
+    checks for is winning condition.
+
+    PARAMS:
+    1. key - the button element in the grid that was clicked.
+
+    2. player_marker - the marker of the current player.
+
+    RETURNS:
+    continue_with_next_game - 'Yes' / 'No' indicator from the user action
+    whether to continue with the same players.
+    '''
 
     global GAME_PROGRESS_ARRAY
-    global CURENT_BOARD_WON
 
     continue_with_next_game: str = ''
 
     row, column = split(key)
     GAME_PROGRESS_ARRAY[row][column] = player_marker
 
+    # check if we have a winner in the current state of the board.
     if CHECK_FOR_WINNER:
         game_won, winning_marker = is_winning()
         if game_won:
-            CURENT_BOARD_WON = True
             continue_with_next_game = display_winner_and_continue(winning_marker=winning_marker)
 
     return continue_with_next_game
@@ -90,7 +98,16 @@ def progress_game(key: str, player_marker: str):
 def is_row_column_diagonal_complete(row_col_num: int = -1, is_row: bool = True,
                                     is_diagonal: bool = False):
     '''checks if the given row or column is complete
-    to proceed with a winner.'''
+    to proceed with a winner.
+
+    PARAMS:
+    1. row_col_num - the row/column index to check if the row/columns is complete.
+    2. is_row: True if a ROW needs to be checked for completion else FALSE for a column.
+    3. is_diagonal: True is any of the diagonal needs to be checked for completion.
+
+    RETURNS:
+    is_complete: BOOLEAN FLAG to indicate of the row/column/diagonal is complete.
+    '''
     is_complete: bool = False
 
     if is_diagonal is False and row_col_num != -1:
@@ -117,10 +134,22 @@ def is_row_column_diagonal_complete(row_col_num: int = -1, is_row: bool = True,
 
     return is_complete
 
-
-def mark_the_winner(row_is_winner: bool, row_column_index: int = -1, diagonal_is_winner: bool = False):
+def mark_the_winner(row_is_winner: bool, row_column_index: int = -1,
+                    diagonal_is_winner: bool = False):
     '''marks the winner row/column by updating
-    the button row/column.'''
+    the button row/column. The button image background
+    changes to red to mark the winning sequence.
+
+    PARAMS:
+    1. row_is_winner - Is the winner found in a ROW wise sequence.
+    TRUE for a row & FALSE incase the winner is a column.
+
+    2. row_column_index - The winning row/column index.
+    This default value is -1 to indicate the winner being found
+    in one of the diagonals.
+
+    3. diagonal_is_winner - Is the winner found in one of the diagonals.
+    '''
 
     if not diagonal_is_winner and row_column_index != -1:
         if row_is_winner:
@@ -203,7 +232,11 @@ def is_winning():
     return False, ''
 
 def display_winner_and_continue(winning_marker: str):
-    '''display the winner of the current board.'''
+    '''display the winner of the current board.
+    
+    PARAMS:
+    1. winning_marker - the marker that won the current board.
+    '''
 
     if winning_marker == PLAYER1_MARKER:
         popup_result = sg.PopupYesNo('The Winner is ' + PLAYER1_NAME + '.\nDo you want to play another game with the current players?',
@@ -218,6 +251,7 @@ def display_winner_and_continue(winning_marker: str):
 
 def init_game_window():
     '''Initializes and creates the game options window.'''
+
     init_game_layout = [[sg.Text('Player 1 Name: ', size=(12, 1)),
                          sg.InputText('', key='-P1_NAME-')],
                         [sg.Text('Player 2 Name: ', size=(12, 1)),
@@ -239,9 +273,9 @@ def reset_game_board():
     global STEP_COUNTER
     global CONTINUE_WITH_NEXT_GAME
     global CHECK_FOR_WINNER
-    global CURENT_BOARD_WON
     global GAME_BOARD
     global PLAYER_SWITCH
+    global MAIN_DIAGONAL_IS_WINNER
 
     GAME_BOARD = initialize_game_board()
     GAME_PROGRESS_ARRAY = [['' for i in range(COLS)] for j in range(ROWS)]
@@ -249,8 +283,26 @@ def reset_game_board():
     STEP_COUNTER = 0
     CHECK_FOR_WINNER = False
     CONTINUE_WITH_NEXT_GAME = ''
-    CURENT_BOARD_WON = False
     PLAYER_SWITCH = True
+    MAIN_DIAGONAL_IS_WINNER = False
+
+def start_next_session(user_choice: str):
+
+    '''starts the next session as per the user choice.
+    YES - retain the players and reset the board state.
+    NO - return to the game init dialog to start over with new set of players.'''
+
+    global INIT_WINDOW
+    global GAME_BOARD
+    
+    if user_choice == 'Yes':
+        # retain the players and reset the board state.
+        GAME_BOARD.Close()
+        reset_game_board()
+    elif user_choice == 'No':
+        # return to the game init dialog to start over with new set of players.
+        GAME_BOARD.Close()
+        INIT_WINDOW = init_game_window()
 
 def initialize_game_board():
     '''initialize the game board.'''
@@ -291,6 +343,7 @@ while True:
 
     if EVENT == '-START-' and not GAME_BOARD:
 
+        # player name validation. Valid names required.
         if VALUES['-P1_NAME-'] == '' and VALUES['-P2_NAME-'] == '':
             sg.popup_ok("Error initializing players name. Enter both the players name before proceeding.",
                         title='Tic Tac Toe', icon=GAME_ICON)
@@ -313,14 +366,16 @@ while True:
                     INIT_WINDOW.close()
                     GAME_BOARD = initialize_game_board()
 
-    if WINDOW == GAME_BOARD and (EVENT in ('WIN_CLOSE', 'Exit')):
+    if WINDOW == GAME_BOARD and (EVENT in ('WIN_CLOSE', '-EXIT-')):
         GAME_BOARD.close()
         GAME_BOARD = None
         INIT_WINDOW = init_game_window()
 
-    if START_GAME:
+    # We do not want to execute the progress logic in case
+    # of the reset event.
+    if START_GAME and EVENT != '-RESET-':
 
-        if EVENT not in ('-START-', 'WIN_CLOSE'):
+        if EVENT not in ('-START-', 'WIN_CLOSE', '-EXIT-'):
             CURRENT_MARKER = GAME_BOARD.Element(EVENT).get_text()
             GAME_BOARD.Element(EVENT).update(PLAYER1_MARKER if CURRENT_MARKER == ' ' and\
                                              PLAYER_SWITCH is True else PLAYER2_MARKER if CURRENT_MARKER == ' ' and\
@@ -341,6 +396,7 @@ while True:
                 GAME_BOARD.Element('-P1-').update(text_color='white')
                 GAME_BOARD.Element('-P2-').update(text_color='darkblue')
 
+                # update the button images as per the current players marker.
                 if PLAYER1_MARKER == 'X':
                     GAME_BOARD.Element(EVENT).update(image_filename=X_IMAGE)
                 else:
@@ -349,12 +405,10 @@ while True:
                 GAME_BOARD.Element(EVENT).update(disabled=True)
 
                 CONTINUE_WITH_NEXT_GAME = progress_game(EVENT, PLAYER1_MARKER)
-                if CONTINUE_WITH_NEXT_GAME == 'Yes':
-                    GAME_BOARD.Close()
-                    reset_game_board()
-                elif CONTINUE_WITH_NEXT_GAME == 'No':
-                    GAME_BOARD.Close()
-                    INIT_WINDOW = init_game_window()
+
+                # start with the same players or new game
+                # session with different players
+                start_next_session(CONTINUE_WITH_NEXT_GAME)
 
             elif GAME_BOARD.Element(EVENT).get_text() == PLAYER2_MARKER:
                 # increase the step counter.
@@ -365,6 +419,7 @@ while True:
                 GAME_BOARD.Element('-P1-').update(text_color='darkblue')
                 GAME_BOARD.Element('-P2-').update(text_color='white')
 
+                # update the button images as per the current players marker.
                 if PLAYER2_MARKER == 'X':
                     GAME_BOARD.Element(EVENT).update(image_filename=X_IMAGE)
                 else:
@@ -373,18 +428,20 @@ while True:
                 GAME_BOARD.Element(EVENT).update(disabled=True)
 
                 CONTINUE_WITH_NEXT_GAME = progress_game(EVENT, PLAYER2_MARKER)
-                if CONTINUE_WITH_NEXT_GAME == 'Yes':
-                    GAME_BOARD.Close()
-                    reset_game_board()
-                elif CONTINUE_WITH_NEXT_GAME == 'No':
-                    GAME_BOARD.Close()
-                    INIT_WINDOW = init_game_window()
+
+                # start with the same players or new game
+                # session with different players
+                start_next_session(CONTINUE_WITH_NEXT_GAME)
 
             # The minimum number of steps required
             # to win the game board is 5.
             if STEP_COUNTER == 4:
                 CHECK_FOR_WINNER = True
 
-    if EVENT == '-RESET-':
-        GAME_BOARD.Close()
-        reset_game_board()
+    if EVENT == '-RESET-' and WINDOW == GAME_BOARD:
+        # reset the current board state.
+        RESET_GAME = sg.popup_yes_no('Are you sure you want to reset the current board?',
+                                     title='Game Reset', icon=GAME_ICON, grab_anywhere=True)
+        if RESET_GAME == 'Yes':
+            GAME_BOARD.Close()
+            reset_game_board()
