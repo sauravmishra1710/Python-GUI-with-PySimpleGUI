@@ -26,12 +26,14 @@
 
     4. RESET would reset thecurrent game session and
     start over a fresh board.
-
 """
 
 import os
 import numpy as np
 import PySimpleGUI as sg
+
+# change the default theme.
+# sg.theme('dark grey 9')
 
 INIT_WINDOW = None
 GAME_BOARD = None
@@ -237,7 +239,7 @@ def is_winning():
 
 def display_winner_and_continue(winning_marker: str):
     '''display the winner of the current board.
-    
+
     PARAMS:
     1. winning_marker - the marker that won the current board.
     '''
@@ -272,7 +274,11 @@ def init_game_window():
 
 def reset_game_board(reset_board: str):
     '''Resets the current game board and re-initializes all the
-    game parameters to continue playing the game with the same players.'''
+    game parameters to continue playing the game with the same players.
+    
+    PARAMS:
+    1. reset_board - resets the current board to the initial state.
+    '''
 
     global GAME_PROGRESS_ARRAY
     global STEP_COUNTER
@@ -394,7 +400,7 @@ while True:
                                              else PLAYER2_MARKER if CURRENT_MARKER == PLAYER2_MARKER else ' ')
 
             # Change the color of the player text to mark
-            # the next player's turn. 'DarkBlue indicates
+            # the next player's turn. 'DarkBlue' indicates
             # the player who should make the next move.'
             # Additionally, Once the player has made a move,
             # disable the button.
