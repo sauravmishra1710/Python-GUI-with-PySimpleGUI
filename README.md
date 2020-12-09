@@ -38,3 +38,14 @@ A simple image viewer application. Loads all the images (jpegs, pngs, etc..) fro
 
 ![PyImageViewer](https://github.com/sauravmishra1710/Python-GUI-with-PySimpleGUI/blob/main/Sample%20Executables/PyImageViewer/PyImageViewer.JPG)
 
+## Tic-Tac-Toe
+
+The tic-tac-toe game implemented using PySimpleGUI.
+
+**Source Code @** https://github.com/sauravmishra1710/Tic-Tac-Toe-using-PySimpleGUI/blob/main/tic_tac_toe_v1.py
+
+
+**Game Demo**
+
+![Tic-Tac-Toe](https://github.com/sauravmishra1710/Tic-Tac-Toe-using-PySimpleGUI/blob/main/tic-tac-toe.gif)
+
