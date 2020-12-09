@@ -24,6 +24,9 @@
 
     3. Exiting the INIT_WINDOW would exit the game.
 
+    4. RESET would reset thecurrent game session and
+    start over a fresh board.
+
 """
 
 import os
@@ -84,36 +87,35 @@ def progress_game(key: str, player_marker: str):
 
     return continue_with_next_game
 
-def is_row_column_diagonal_complete(row_col_num: int = -1, is_row: bool = True, is_diagonal: bool = False):
+def is_row_column_diagonal_complete(row_col_num: int = -1, is_row: bool = True,
+                                    is_diagonal: bool = False):
     '''checks if the given row or column is complete
     to proceed with a winner.'''
+    is_complete: bool = False
 
     if is_diagonal is False and row_col_num != -1:
         if is_row:
             row = row_col_num
-            if GAME_PROGRESS_ARRAY[row][0] != '' and \
-                    GAME_PROGRESS_ARRAY[row][1] != '' and \
-                        GAME_PROGRESS_ARRAY[row][2] != '':
-                return True
-            else:
-                return False
+            is_complete = GAME_PROGRESS_ARRAY[row][0] != '' and \
+                          GAME_PROGRESS_ARRAY[row][1] != '' and \
+                          GAME_PROGRESS_ARRAY[row][2] != ''
         else:
             col = row_col_num
-            if GAME_PROGRESS_ARRAY[0][col] != '' and \
-                    GAME_PROGRESS_ARRAY[1][col] != '' and \
-                        GAME_PROGRESS_ARRAY[2][col] != '':
-                return True
-            else:
-                return False
+            is_complete = GAME_PROGRESS_ARRAY[0][col] != '' and \
+                          GAME_PROGRESS_ARRAY[1][col] != '' and \
+                          GAME_PROGRESS_ARRAY[2][col] != ''
     else:
         if GAME_PROGRESS_ARRAY[0][0] != '' and \
             GAME_PROGRESS_ARRAY[1][1] != '' and \
                 GAME_PROGRESS_ARRAY[2][2] != '':
-            return True
-        elif GAME_PROGRESS_ARRAY[2][0] != '' and \
+            is_complete = True
+
+        if GAME_PROGRESS_ARRAY[2][0] != '' and \
                 GAME_PROGRESS_ARRAY[1][1] != '' and \
                     GAME_PROGRESS_ARRAY[0][2] != '':
-            return True
+            is_complete = True
+
+    return is_complete
 
 
 def mark_the_winner(row_is_winner: bool, row_column_index: int = -1, diagonal_is_winner: bool = False):
@@ -174,7 +176,6 @@ def is_winning():
         if is_row_column_diagonal_complete(row_col_num=row, is_row=True):
             if GAME_PROGRESS_ARRAY[row][0] == GAME_PROGRESS_ARRAY[row][1] == GAME_PROGRESS_ARRAY[row][2]:
                 mark_the_winner(row_is_winner=True, row_column_index=row)
-                # continue_game = display_winner_and_continue(winning_marker=GAME_PROGRESS_ARRAY[row][0])
                 CHECK_FOR_WINNER = False
                 return True, GAME_PROGRESS_ARRAY[row][0]
 
@@ -183,25 +184,22 @@ def is_winning():
         if is_row_column_diagonal_complete(row_col_num=col, is_row=False):
             if GAME_PROGRESS_ARRAY[0][col] == GAME_PROGRESS_ARRAY[1][col] == GAME_PROGRESS_ARRAY[2][col]:
                 mark_the_winner(row_is_winner=False, row_column_index=col)
-                # display_winner_and_continue(winning_marker=GAME_PROGRESS_ARRAY[0][col])
                 CHECK_FOR_WINNER = False
                 return True, GAME_PROGRESS_ARRAY[0][col]
-    
+
     # check for the 2 diagonals for a winning sequence.
     if is_row_column_diagonal_complete(is_diagonal=True):
         if GAME_PROGRESS_ARRAY[0][0] == GAME_PROGRESS_ARRAY[1][1] == GAME_PROGRESS_ARRAY[2][2]:
             MAIN_DIAGONAL_IS_WINNER = True
             mark_the_winner(row_column_index=-1, row_is_winner=False, diagonal_is_winner=True)
-            # display_winner_and_continue(winning_marker=GAME_PROGRESS_ARRAY[1][1])
             CHECK_FOR_WINNER = False
             return True, GAME_PROGRESS_ARRAY[1][1]
 
         elif GAME_PROGRESS_ARRAY[2][0] == GAME_PROGRESS_ARRAY[1][1] == GAME_PROGRESS_ARRAY[0][2]:
             mark_the_winner(row_column_index=-1, row_is_winner=False, diagonal_is_winner=True)
-            # display_winner_and_continue(winning_marker=GAME_PROGRESS_ARRAY[1][1])
             CHECK_FOR_WINNER = False
             return True, GAME_PROGRESS_ARRAY[1][1]
-    
+
     return False, ''
 
 def display_winner_and_continue(winning_marker: str):
@@ -209,15 +207,15 @@ def display_winner_and_continue(winning_marker: str):
 
     if winning_marker == PLAYER1_MARKER:
         popup_result = sg.PopupYesNo('The Winner is ' + PLAYER1_NAME + '.\nDo you want to play another game with the current players?',
-                                      title='Board Winner!', text_color='darkblue', icon=GAME_ICON,
-                                      grab_anywhere=True, font=('Blackadder ITC', 20))
+                                     title='Board Winner!', text_color='darkblue', icon=GAME_ICON,
+                                     grab_anywhere=True, font=('Blackadder ITC', 20))
     elif winning_marker == PLAYER2_MARKER:
         popup_result = sg.PopupYesNo('The Winner is ' + PLAYER2_NAME + '.\nDo you want to play another game with the current players?',
-                                      title='Board Winner!', text_color='darkblue', icon=GAME_ICON,
-                                      grab_anywhere=True, font=('Blackadder ITC', 20))
+                                     title='Board Winner!', text_color='darkblue', icon=GAME_ICON,
+                                     grab_anywhere=True, font=('Blackadder ITC', 20))
 
     return popup_result
-    
+
 def init_game_window():
     '''Initializes and creates the game options window.'''
     init_game_layout = [[sg.Text('Player 1 Name: ', size=(12, 1)),
@@ -270,6 +268,8 @@ def initialize_game_board():
 
     GAME_BOARD_LAYOUT += [[sg.Button(' ', size=(8, 4), key=str(j)+str(i))
                             for i in range(3)] for j in range(3)]
+
+    GAME_BOARD_LAYOUT += [[sg.Button("Reset Game", key="-RESET-", tooltip='Resets the current session.')]]
 
     BOARD = sg.Window('Tic Tac Toe', GAME_BOARD_LAYOUT, icon=GAME_ICON, finalize=True)
 
@@ -384,3 +384,7 @@ while True:
             # to win the game board is 5.
             if STEP_COUNTER == 4:
                 CHECK_FOR_WINNER = True
+
+    if EVENT == '-RESET-':
+        GAME_BOARD.Close()
+        reset_game_board()
